@@ -1,0 +1,38 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  description: "Renovate config for {{ project_name }}",
+  extends: [
+    "config:best-practices",
+    "customManagers:githubActionsVersions",
+    "helpers:pinGitHubActionDigestsToSemver",
+    ":pinAllExceptPeerDependencies",
+    ":separateMultipleMajorReleases",
+    ":timezone(Europe/Berlin)",
+    "schedule:weekly",
+    "security:openssf-scorecard",
+  ],
+  labels: ["renovate", "dependencies"],
+  reviewers: [{% for maintainer in maintainers %}"{{ maintainer }}"{% if not loop.last %}, {% endif %}{% endfor %}],
+  lockFileMaintenance: {
+    enabled: true,
+  },
+  packageRules: [
+    {
+      matchManagers: ["pep621"],
+      matchUpdateTypes: ["minor", "patch"],
+      groupName: "Python: non-major updates",
+      groupSlug: "python-non-major",
+      matchDepNames: ["!python"],
+    },
+    {
+      matchManagers: ["dockerfile"],
+      groupName: "Dockerfile base images",
+      groupSlug: "dockerfile-base-images",
+    },
+    {
+      matchManagers: ["github-actions"],
+      groupName: "GitHub Actions dependencies",
+      groupSlug: "github-actions",
+    },
+  ],
+}

@@ -1,0 +1,42 @@
+FROM {{ backend_ubi10_base_image }}
+
+COPY --from=ghcr.io/astral-sh/uv:0.11.14 /uv /uvx /bin/
+
+ENV UV_PROJECT_ENVIRONMENT=/app/{{ module_name }}/.venv
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+
+WORKDIR /app/{{ module_name }}
+
+COPY pyproject.toml uv.lock ./
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-install-project
+
+COPY . /app/{{ module_name }}/
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
+
+ARG IMAGE_CREATED="unknown"
+ARG IMAGE_REVISION="unknown"
+ARG IMAGE_VERSION="unknown"
+LABEL org.opencontainers.image.authors="{{ oci_authors }}" \
+    org.opencontainers.image.vendor="{{ oci_vendor }}" \
+    org.opencontainers.image.created="$IMAGE_CREATED" \
+    org.opencontainers.image.revision="$IMAGE_REVISION" \
+    org.opencontainers.image.version="$IMAGE_VERSION" \
+    org.opencontainers.image.url="https://github.com/{{ repository_owner }}/{{ project_name }}" \
+    org.opencontainers.image.documentation="https://github.com/{{ repository_owner }}/{{ project_name }}/README.md" \
+    org.opencontainers.image.source="https://github.com/{{ repository_owner }}/{{ project_name }}" \
+    org.opencontainers.image.licenses="{{ oci_license }}" \
+    org.opencontainers.image.title="{{ project_name }}-backend" \
+    org.opencontainers.image.description="Python backend for {{ short_description }}"
+
+ENV PATH="/app/{{ module_name }}/.venv/bin:$PATH"
+
+RUN useradd -r -u 1001 -g root appuser && chown -R appuser /app
+
+USER appuser
+
+ENTRYPOINT ["/app/{{ module_name }}/.venv/bin/python", "main.py"]

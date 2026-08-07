@@ -1,0 +1,93 @@
+_jinja_extensions:
+  - jinja_markdown.MarkdownExtension
+  - jinja2_slug.SlugExtension
+  - jinja2_time.TimeExtension
+
+_exclude:
+  - "copier.yml"
+  - "copier.yaml"
+  - "~*"
+  - "*.py[co]"
+  - "__pycache__"
+  - ".git"
+  - ".DS_Store"
+  - ".svn"
+  - "{% if not frontend %}{{ module_name }}-frontend{% endif %}"
+  - "{% if not frontend %}{{ module_name }}-frontend/**{% endif %}"
+  - "{% if not backend %}{{ module_name }}-backend{% endif %}"
+  - "{% if not backend %}{{ module_name }}-backend/**{% endif %}"
+  - "{% if not job %}{{ module_name }}-job{% endif %}"
+  - "{% if not job %}{{ module_name }}-job/**{% endif %}"
+
+project_name:
+  type: str
+  help: What is your project or repository name? This can include hyphens.
+
+module_name:
+  type: str
+  default: "{{ project_name | lower | replace(' ', '_') | replace('-', '_') }}"
+  help: What is your Python import name? Use a valid Python package name without hyphens.
+
+repository_owner:
+  type: str
+  default: it-at-m
+  help: What GitHub owner or organization should be used for repository URLs?
+
+short_description:
+  type: str
+  help: What is the short description for the generated project?
+
+maintainers:
+  type: yaml
+  default: []
+  help: GitHub usernames of the maintainers as a YAML list.
+
+oci_authors:
+  type: str
+  default: "Landeshauptstadt München <opensource@muenchen.de>"
+  help: What should the OCI authors label be?
+
+oci_vendor:
+  type: str
+  default: Landeshauptstadt München
+  help: What should the OCI vendor label be?
+
+oci_license:
+  type: str
+  default: MIT
+  help: What should the OCI license label be?
+
+backend:
+  type: bool
+  default: true
+  help: Create a python backend?
+
+job:
+  type: bool
+  default: false
+  help: Create a python job worker (e.g. for background tasks like indexing)?
+
+frontend:
+  type: bool
+  default: true
+  help: Create a Vue frontend?
+
+backend_ubi10_base_image:
+  type: str
+  default: registry.access.redhat.com/ubi10/ubi-minimal:10.1-1775622738
+  choices:
+    UBI 10 regular: registry.access.redhat.com/ubi10/ubi:10.1-1775622738
+    UBI 10 minimal: registry.access.redhat.com/ubi10/ubi-minimal:10.1-1775622738
+    UBI 10 micro: registry.access.redhat.com/ubi10/ubi-micro:10.1-1775622738
+  when: "{{ backend }}"
+  help: Which UBI 10 base image should be used for the backend container?
+
+job_ubi10_base_image:
+  type: str
+  default: registry.access.redhat.com/ubi10/ubi-minimal:10.1-1775622738
+  choices:
+    UBI 10 regular: registry.access.redhat.com/ubi10/ubi:10.1-1775622738
+    UBI 10 minimal: registry.access.redhat.com/ubi10/ubi-minimal:10.1-1775622738
+    UBI 10 micro: registry.access.redhat.com/ubi10/ubi-micro:10.1-1775622738
+  when: "{{ job }}"
+  help: Which UBI 10 base image should be used for the job container?

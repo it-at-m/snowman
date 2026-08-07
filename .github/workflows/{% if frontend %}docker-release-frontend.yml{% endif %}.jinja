@@ -1,0 +1,60 @@
+name: Build and Release Frontend Docker Image
+
+permissions:
+    contents: read
+
+on:
+    push:
+        tags:
+            - "frontend-*"
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: "Frontend tag to release (e.g., frontend-1.0.0)"
+                required: true
+                default: "frontend-latest"
+
+jobs:
+    build-and-push-frontend:
+        runs-on: ubuntu-latest
+        permissions:
+            packages: write
+        steps:
+            - uses: actions/checkout@v4.2.2
+            - uses: docker/setup-qemu-action@v3.6.0
+            - uses: docker/setup-buildx-action@v3.11.1
+            - uses: docker/login-action@v3.4.0
+              with:
+                  registry: ghcr.io
+                  username: {% raw %}${{ github.actor }}{% endraw %}
+                  password: {% raw %}${{ secrets.GITHUB_TOKEN }}{% endraw %}
+            - name: Extract version from frontend tag
+              id: vars
+              run: |
+                  if [[ "{% raw %}${{ github.event_name }}{% endraw %}" == "workflow_dispatch" ]]; then
+                      FULL_TAG="{% raw %}${{ github.event.inputs.tag }}{% endraw %}"
+                  else
+                      FULL_TAG=${GITHUB_REF#refs/tags/}
+                  fi
+
+                  if [[ "$FULL_TAG" =~ ^frontend-(.+)$ ]]; then
+                      VERSION="${BASH_REMATCH[1]}"
+                  else
+                      echo "Error: Tag must start with 'frontend-'"
+                      exit 1
+                  fi
+
+                  echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+                  echo "repo_lowercase=$(echo '{% raw %}${{ github.repository }}{% endraw %}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+            - uses: docker/build-push-action@v6.18.0
+              with:
+                  context: ./{{ module_name }}-frontend
+                  file: ./{{ module_name }}-frontend/Dockerfile
+                  push: true
+                  sbom: true
+                  provenance: true
+                  tags: |
+                      ghcr.io/{% raw %}${{ steps.vars.outputs.repo_lowercase }}{% endraw %}/{{ module_name }}-frontend:{% raw %}${{ steps.vars.outputs.version }}{% endraw %}
+                      ghcr.io/{% raw %}${{ steps.vars.outputs.repo_lowercase }}{% endraw %}/{{ module_name }}-frontend:latest
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max

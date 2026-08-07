@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(superpowers:receiving-code-review)",
+      "Skill(superpowers:receiving-code-review:*)",
+      "Skill(superpowers:writing-plans)",
+      "Skill(superpowers:writing-plans:*)"
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+# Getting started
+
+This is the starter guide for {{ project_name }}.
+
+Add your project introduction, setup instructions, and deployment notes here.
+
+## Initial setup after template generation
+
+After applying the Copier template, generate and commit the lockfiles before your first Docker build:
+
+{% if backend or job %}
+**Python backend/job** — run `uv lock` (or `uv sync`) and commit the generated `uv.lock`.
+{% endif %}
+{% if frontend %}
+**Vue frontend** — run `npm install` inside `{{ module_name }}-frontend/` and commit the generated `package-lock.json`.
+{% endif %}
+
+These lockfiles are required by the Dockerfiles (`uv sync --frozen` / `npm ci`) to produce reproducible images.

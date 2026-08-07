@@ -1,0 +1,28 @@
+{
+  "name": "{{ project_name }}-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --build && vite build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --build --noEmit",
+    "lint": "prettier --check .",
+    "fix": "prettier --write ."
+  },
+  "dependencies": {
+    "vue": "3.5.27"
+  },
+  "devDependencies": {
+    "@muenchen/prettier-codeformat": "1.0.2",
+    "@tsconfig/node-lts": "22.0.4",
+    "@types/node": "22.19.17",
+    "@vitejs/plugin-vue": "6.0.5",
+    "@vue/tsconfig": "0.8.1",
+    "prettier": "3.5.3",
+    "typescript": "5.9.3",
+    "vite": "7.3.2",
+    "vue-tsc": "3.1.8"
+  }
+}

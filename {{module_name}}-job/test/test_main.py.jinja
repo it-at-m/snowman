@@ -1,0 +1,32 @@
+import asyncio
+
+import main
+
+
+def test_run_uses_example_url(monkeypatch) -> None:
+    captured = {}
+
+    class DummyResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, str]:
+            return {"ok": "true"}
+
+    class DummyClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+        async def get(self, url: str):
+            captured["url"] = url
+            return DummyResponse()
+
+    monkeypatch.setattr(main.httpx, "AsyncClient", lambda *args, **kwargs: DummyClient())
+
+    asyncio.run(main.run())
+
+    assert "url" in captured
+    assert captured["url"] == main.EXAMPLE_URL

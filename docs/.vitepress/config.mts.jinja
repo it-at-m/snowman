@@ -1,0 +1,10 @@
+import { defineConfig } from "vitepress"
+
+export default defineConfig({
+  title: "{{ project_name }}",
+  description: "Documentation for {{ project_name }}",
+  themeConfig: {
+    nav: [{ text: "Home", link: "/" }],
+    sidebar: [{ text: "Introduction", items: [{ text: "Home", link: "/" }] }],
+  },
+})
