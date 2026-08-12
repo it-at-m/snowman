@@ -1,0 +1,19 @@
+[project]
+name = "SNOW-MCP-Search"
+version = "0.1.0"
+description = "Repository-level development tooling SNOW."
+readme = "README.md"
+requires-python = "==3.13.11"
+dependencies = [
+    "jupyter==1.1.1",
+]
+
+[dependency-groups]
+dev = ["pre-commit==4.6.0"]
+beta-typing = ["ty==0.0.59"]
+lint = ["ruff==0.15.21"]
+
+[tool.uv]
+add-bounds = "exact"
+default-groups = ["dev", "lint"]
+package = false
