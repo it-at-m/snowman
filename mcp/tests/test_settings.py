@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 
 from src.config.settings import McpSettings, RetrievalSettings
 

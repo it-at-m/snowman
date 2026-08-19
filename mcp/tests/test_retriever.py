@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 
 from langchain_core.documents import Document
 from src.config.settings import RetrievalSettings

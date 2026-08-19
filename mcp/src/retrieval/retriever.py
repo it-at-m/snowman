@@ -1,4 +1,4 @@
-﻿import warnings
+import warnings
 
 from cohere import ClientV2
 from cohere.v2.types import V2RerankResponse
@@ -114,9 +114,7 @@ class Retriever:
         params = client.get_collection(collection_name).config.params
         # Unnamed legacy config -> VectorParams; named config -> dict[str, VectorParams]
         unnamed = isinstance(params.vectors, VectorParams)
-        has_sparse = bool(params.sparse_vectors) and (
-            self.config.sparse_vector_name in (params.sparse_vectors or {})
-        )
+        has_sparse = bool(params.sparse_vectors) and (self.config.sparse_vector_name in (params.sparse_vectors or {}))
 
         if unnamed or not has_sparse:
             return QdrantVectorStore(
@@ -154,7 +152,7 @@ class Retriever:
                         "score_threshold": self.config.retrieval_score_threshold,
                         "k": self.config.retrieval_n_docs,
                         "hybrid_fusion": FusionQuery(fusion=fusion),
-                        "filter": filter
+                        "filter": filter,
                     },
                 )
         return self._retrievers[collection_name]

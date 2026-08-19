@@ -38,6 +38,7 @@ def create_server(
         return JSONResponse({"status": "ok", "service": "snow-search-mcp"})
 
     _METADATA_FIELDS = ("number", "title", "source", "knowledgebase", "lang", "updated_at")
+
     @server.tool()
     def search_eakte_knowledge_base(
         query: Annotated[
@@ -97,14 +98,8 @@ def create_server(
         results = [
             {
                 "page_content": document.page_content,
-                **{
-                    field: document.metadata[field]
-                    for field in _METADATA_FIELDS
-                    if field in document.metadata
-                },
-                "relevance_score": round(
-                    float(document.metadata.get("relevance_score", 0.0)), 3
-                ),
+                **{field: document.metadata[field] for field in _METADATA_FIELDS if field in document.metadata},
+                "relevance_score": round(float(document.metadata.get("relevance_score", 0.0)), 3),
             }
             for documents in documents_by_collection.values()
             for document in documents

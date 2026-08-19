@@ -1,4 +1,4 @@
-﻿from logging import Logger
+from logging import Logger
 
 from truststore import inject_into_ssl
 
