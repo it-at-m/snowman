@@ -8,7 +8,7 @@ from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_openai import OpenAIEmbeddings
 from langchain_qdrant import FastEmbedSparse, QdrantVectorStore, RetrievalMode
 from qdrant_client import QdrantClient
-from qdrant_client.models import Fusion, FusionQuery, Filter, VectorParams
+from qdrant_client.models import Filter, Fusion, FusionQuery, VectorParams
 
 from src.config.settings import RetrievalSettings
 from src.utils.logtools import getLogger

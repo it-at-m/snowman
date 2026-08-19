@@ -2,9 +2,9 @@ import json
 import unittest
 from unittest.mock import patch
 
+from langchain_core.documents import Document
 from src.config.settings import McpSettings
 from src.server import create_server
-from langchain_core.documents import Document
 
 
 class FakeRetriever:

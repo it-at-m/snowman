@@ -1,8 +1,8 @@
 ﻿import unittest
 
+from langchain_core.documents import Document
 from src.config.settings import RetrievalSettings
 from src.retrieval.retriever import Retriever
-from langchain_core.documents import Document
 
 
 class FakeVectorStoreRetriever:

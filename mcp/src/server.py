@@ -1,11 +1,11 @@
+from typing import Annotated
+
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
+from pydantic import Field
+from qdrant_client import models
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
-from qdrant_client import models
-
-from pydantic import Field
-from typing import Annotated
 
 from src.config.settings import McpSettings, RetrievalSettings
 from src.retrieval.retriever import Retriever
