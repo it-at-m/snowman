@@ -2,9 +2,6 @@ FROM registry.access.redhat.com/ubi10/ubi-minimal:latest@sha256:5a1acbfad56de537
 
 WORKDIR /app
 
-ARG HTTP_PROXY=http://internet-proxy-server.muenchen.de:80
-ARG HTTPS_PROXY=http://internet-proxy-server.muenchen.de:80
-ARG NO_PROXY=localhost,*.svc,svc.local,*svc.cluster.local,muenchen.de
 ARG UV_HTTP_TIMEOUT=300
 ARG UV_HTTP_RETRIES=10
 ARG UV_PYTHON_INSTALL_MIRROR
@@ -12,10 +9,7 @@ ARG IMAGE_CREATED="unknown"
 ARG IMAGE_REVISION="unknown"
 ARG IMAGE_VERSION="unknown"
 
-ENV HTTP_PROXY=$HTTP_PROXY \
-    HTTPS_PROXY=$HTTPS_PROXY \
-    NO_PROXY=$NO_PROXY \
-    UV_HTTP_TIMEOUT=$UV_HTTP_TIMEOUT \
+ENV UV_HTTP_TIMEOUT=$UV_HTTP_TIMEOUT \
     UV_HTTP_RETRIES=$UV_HTTP_RETRIES \
     UV_PYTHON_INSTALL_MIRROR=$UV_PYTHON_INSTALL_MIRROR \
     UV_COMPILE_BYTECODE=0 \
@@ -59,9 +53,6 @@ ENV PATH="/app/.venv/bin:$PATH" \
     HF_HUB_DISABLE_PROGRESS_BARS=1 \
     PYTHONWARNINGS=ignore \
     APP_VERSION=${IMAGE_VERSION} \
-    HTTP_PROXY= \
-    HTTPS_PROXY= \
-    NO_PROXY=
 
 EXPOSE 8080
 
