@@ -1,0 +1,14 @@
+__pycache__/
+.ruff_cache/
+.venv/
+.git/
+.env
+**/.env
+**/__pycache__/
+**/.ruff_cache/
+**/.pytest_cache/
+Documentation/
+PoC/
+indexer/
+infrastructure/
+values-qdrant-*.yaml

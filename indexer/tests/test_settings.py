@@ -1,0 +1,37 @@
+import unittest
+
+from pydantic import ValidationError
+from src.config.settings import IndexerSettings, SnowSettings
+
+
+class IndexerSettingsTests(unittest.TestCase):
+    def test_reads_shared_environment_aliases(self):
+        settings = IndexerSettings(
+            _env_file=None,
+            VDB_COLLECTIONS="SNOW_KB",
+            VDB_TIMEOUT="42",
+            EMB_TIMEOUT="7",
+        )
+        self.assertEqual("SNOW_KB", settings.collection_name)
+        self.assertEqual(42, settings.qdrant_timeout)
+        self.assertEqual(7, settings.embedding_timeout)
+
+    def test_rejects_multiple_collections_and_invalid_overlap(self):
+        with self.assertRaises(ValidationError):
+            IndexerSettings(_env_file=None, collection_name="one,two")
+        with self.assertRaises(ValidationError):
+            IndexerSettings(_env_file=None, document_chunk_size=100, document_chunk_overlap=100)
+
+    def test_snow_languages_are_adapter_specific(self):
+        settings = SnowSettings(
+            _env_file=None,
+            servicenow_url="https://example.invalid",
+            servicenow_client_id="client",
+            servicenow_client_secret="secret",
+            servicenow_languages="de, en ",
+        )
+        self.assertEqual(["de", "en"], settings.languages_list)
+
+
+if __name__ == "__main__":
+    unittest.main()
