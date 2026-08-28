@@ -31,7 +31,7 @@ class SnowLoader:
     """
 
     def __init__(self, config: SnowSettings):
-        self._base_url = config.servicenow_url.rstrip("/")
+        self._base_url = config.servicenow_url
         self._client_id = config.servicenow_client_id
         self._client_secret = config.servicenow_client_secret
         self._scope = config.servicenow_oauth_scope

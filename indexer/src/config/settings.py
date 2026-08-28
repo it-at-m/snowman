@@ -16,8 +16,11 @@ class IndexerSettings(BaseSettings):
         extra="ignore",
         populate_by_name=True,
     )
-    qdrant_url: str = "http://localhost:6333"
-    qdrant_api_key: str | None = None
+    http_proxy: str | None = Field(default=None, validation_alias=AliasChoices("HTTP_PROXY", "VDB_HTTP_PROXY"))
+    https_proxy: str | None = Field(default=None, validation_alias=AliasChoices("HTTPS_PROXY", "VDB_HTTPS_PROXY"))
+    no_proxy: str | None = Field(default=None, validation_alias=AliasChoices("NO_PROXY", "VDB_NO_PROXY"))
+    qdrant_url: str | None = Field(default=None, validation_alias=AliasChoices("VDB_URL", "QDRANT_URL"))
+    qdrant_api_key: str | None = Field(default=None, validation_alias=AliasChoices("VDB_API_KEY", "QDRANT_API_KEY"))
     qdrant_timeout: int = Field(default=100, validation_alias=AliasChoices("VDB_TIMEOUT", "QDRANT_TIMEOUT"))
     collection_name: str = Field(default="snow-search", validation_alias=AliasChoices("VDB_COLLECTION_NAME", "VDB_COLLECTIONS"))
     openai_embedding_model: str = "text-embedding-3-large"
@@ -66,9 +69,10 @@ class SnowSettings(BaseSettings):
         extra="ignore",
         populate_by_name=True,
     )
-    servicenow_url: str
-    servicenow_client_id: str
-    servicenow_client_secret: str
+    servicenow_url: str | None = Field(default=None, validation_alias=AliasChoices("SERVICENOW_URL", "SNOW_URL"))
+    servicenow_client_id: str | None = Field(default=None, validation_alias=AliasChoices("SERVICENOW_CLIENT_ID", "SNOW_CLIENT_ID"))
+    servicenow_client_secret: str | None = Field(default=None, validation_alias=AliasChoices("SERVICENOW_CLIENT_SECRET", "SNOW_CLIENT_SECRET"))
+    servicenow_token_url: str | None = Field(default=None, validation_alias=AliasChoices("SERVICENOW_TOKEN_URL", "SNOW_TOKEN_URL"))
     servicenow_oauth_scope: str = "knowledge"
     servicenow_verify_ssl: bool = True
     servicenow_page_size: int = Field(default=100, ge=1)
@@ -77,3 +81,7 @@ class SnowSettings(BaseSettings):
     @property
     def languages_list(self) -> list[str]:
         return [language.strip() for language in self.servicenow_languages.split(",") if language.strip()]
+
+    @property
+    def token_url(self) -> str:
+        return self.servicenow_token_url or f"https://{self.servicenow_url.split('/')[2]}/oauth_token.do" if self.servicenow_url else ""
