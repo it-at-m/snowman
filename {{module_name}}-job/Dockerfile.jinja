@@ -1,6 +1,6 @@
 FROM {{ job_ubi10_base_image }}
 
-COPY --from=ghcr.io/astral-sh/uv:0.11.14 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.12.7 /uv /uvx /bin/
 
 ENV UV_PROJECT_ENVIRONMENT=/app/{{ module_name }}/.venv
 ENV UV_COMPILE_BYTECODE=1
