@@ -12,7 +12,7 @@ COPY docker ./docker
 
 RUN npm run build
 
-FROM registry.access.redhat.com/ubi10/nginx-126:10.1-1775622738
+FROM registry.access.redhat.com/ubi10/nginx-126:10.2-1787734528
 
 COPY --from=builder /build/dist /opt/app-root/src
 COPY docker/nginx/default.conf "${NGINX_DEFAULT_CONF_PATH}"
