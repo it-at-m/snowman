@@ -71,7 +71,9 @@ class SnowSettings(BaseSettings):
     )
     servicenow_url: str | None = Field(default=None, validation_alias=AliasChoices("SERVICENOW_URL", "SNOW_URL"))
     servicenow_client_id: str | None = Field(default=None, validation_alias=AliasChoices("SERVICENOW_CLIENT_ID", "SNOW_CLIENT_ID"))
-    servicenow_client_secret: str | None = Field(default=None, validation_alias=AliasChoices("SERVICENOW_CLIENT_SECRET", "SNOW_CLIENT_SECRET"))
+    servicenow_client_secret: str | None = Field(
+        default=None, validation_alias=AliasChoices("SERVICENOW_CLIENT_SECRET", "SNOW_CLIENT_SECRET")
+    )
     servicenow_token_url: str | None = Field(default=None, validation_alias=AliasChoices("SERVICENOW_TOKEN_URL", "SNOW_TOKEN_URL"))
     servicenow_oauth_scope: str = "knowledge"
     servicenow_verify_ssl: bool = True
