@@ -37,7 +37,7 @@ LABEL org.opencontainers.image.authors='Landeshauptstadt Muenchen <opensource@mu
     org.opencontainers.image.created="$IMAGE_CREATED" \
     org.opencontainers.image.revision="$IMAGE_REVISION" \
     org.opencontainers.image.version="$IMAGE_VERSION" \
-    org.opencontainers.image.source='https://example.org/snow-search' \
+    org.opencontainers.image.source='https://github.com/it-at-m/snowman' \
     org.opencontainers.image.title='snow-search-mcp' \
     org.opencontainers.image.description='MCP server for Service Now knowledge retrieval.'
 

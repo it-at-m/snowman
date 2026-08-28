@@ -49,11 +49,9 @@ jobs:
           name: mcp
           path: build-context
 
-
   build-image:
     name: Build and push MCP image
     runs-on: ubuntu-latest
-
     needs:
       - test
 
@@ -74,4 +72,9 @@ jobs:
           registry-username: ${{ github.actor }}
           registry-password: ${{ secrets.GITHUB_TOKEN }}
           image-tags: |
-            type=raw,value=dev
+            type=sha,prefix=sha-,format=long
+
+          image-labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=sha-${{ github.sha }}
