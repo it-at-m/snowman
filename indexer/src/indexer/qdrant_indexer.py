@@ -34,7 +34,9 @@ class QdrantIndexer:
         self.config = config
         self._client = client
         self._dense_embedding_model = dense_embedding_model or self._create_dense_embedding_model()
-        self._sparse_embedding_model = sparse_embedding_model or self._create_sparse_embedding_model() if config.indexing_mode == "hybrid" else None
+        self._sparse_embedding_model = (
+            sparse_embedding_model or self._create_sparse_embedding_model() if config.indexing_mode == "hybrid" else None
+        )
         self._vector_store: QdrantVectorStore | None = None
 
     def _create_dense_embedding_model(self) -> Embeddings:
