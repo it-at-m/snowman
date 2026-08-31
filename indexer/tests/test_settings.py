@@ -32,6 +32,22 @@ class IndexerSettingsTests(unittest.TestCase):
         )
         self.assertEqual(["de", "en"], settings.languages_list)
 
+    def test_snow_proxies_include_only_configured_protocols(self):
+        settings = SnowSettings(
+            _env_file=None,
+            HTTP_PROXY="http://proxy.example.invalid:8080",
+        )
+
+        self.assertEqual({"http": "http://proxy.example.invalid:8080"}, settings.proxies)
+
+    def test_snow_token_url_uses_instance_from_articles_endpoint(self):
+        settings = SnowSettings(
+            _env_file=None,
+            servicenow_url="https://example.invalid/api/sn_km_api/knowledge/articles?kb=kb-id",
+        )
+
+        self.assertEqual("https://example.invalid/oauth_token.do", settings.token_url)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -44,6 +44,18 @@ uv run --directory indexer python -m src.main
 
 The indexer accepts `VDB_COLLECTION_NAME`. For compatibility with the MCP configuration, a single value in `VDB_COLLECTIONS` is also accepted; comma-separated collections are rejected by the indexer.
 
+## ServiceNow loader
+
+Set `SERVICENOW_URL` to the complete Knowledge API endpoint, including the knowledge-base selector:
+
+```dotenv
+SERVICENOW_URL=https://example.service-now.com/api/sn_km_api/knowledge/articles?kb=knowledge-base-sys-id
+SERVICENOW_CLIENT_ID=...
+SERVICENOW_CLIENT_SECRET=...
+```
+
+The loader follows pagination until every published article has been read, fetches each article's full content, and converts its HTML to Markdown. Each LangChain document includes a `scope` metadata value of `user`, `admin`, or `general`, derived from `meta_description`. Articles mentioning both users and administrators are `general`. ServiceNow attachments are kept as links in the `attachments` metadata value and are not downloaded or parsed.
+
 Run verification from this directory:
 
 ```bash
