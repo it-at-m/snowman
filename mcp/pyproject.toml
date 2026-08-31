@@ -13,7 +13,7 @@ dependencies = [
     "mcp==1.28.1",
     "pydantic==2.13.4",
     "pydantic-settings==2.14.2",
-    "python-dotenv==1.2.2",
+    "python-dotenv==1.2.3",
     "pyyaml==6.0.3",
     "qdrant-client==1.18.0",
     "truststore==0.10.4",
