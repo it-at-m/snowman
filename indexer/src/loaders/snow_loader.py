@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from urllib.parse import urlsplit
 
 import requests
 from langchain_core.documents import Document
@@ -9,149 +10,166 @@ from src.config.settings import SnowSettings
 
 logger = logging.getLogger(__name__)
 
+ARTICLE_FIELDS = ",".join(
+    [
+        "kb_category",
+        "kb_knowledge_base",
+        "workflow_state",
+        "sys_created_on",
+        "sys_updated_on",
+        "valid_to",
+        "meta_description",
+    ]
+)
+
 
 class SnowLoader:
-    """
-    Loads published Knowledge Base articles from a ServiceNow instance using OAuth client_credentials.
-
-    Config dictionary expected keys:
-      - SERVICENOW_URL: Base URL of the ServiceNow instance, e.g. "https://example.service-now.com"
-      - SERVICENOW_CLIENT_ID: OAuth client id
-      - SERVICENOW_CLIENT_SECRET: OAuth client secret
-      - SERVICENOW_OAUTH_SCOPE (optional): OAuth scopes, default knowledge
-      - SERVICENOW_VERIFY_SSL (optional): bool, default True
-      - SERVICENOW_PAGE_SIZE (optional): int, default 100
-
-    Returned Documents have Markdown page_content and metadata including:
-      - source: deep link to the KB article
-      - updated_at: ISO formatted updated timestamp
-      - title: short_description of the article
-      - number: ServiceNow KB number
-      - sys_id: sys_id of the KB article
-    """
+    """Load all published ServiceNow KB articles as LangChain documents."""
 
     def __init__(self, config: SnowSettings):
-        self._base_url = config.servicenow_url
+        if not config.servicenow_url:
+            raise ValueError("SERVICENOW_URL is required")
+        if not config.servicenow_client_id or not config.servicenow_client_secret:
+            raise ValueError("SERVICENOW_CLIENT_ID and SERVICENOW_CLIENT_SECRET are required")
+
+        self._articles_url = config.servicenow_url
+        self._token_url = config.token_url
         self._client_id = config.servicenow_client_id
-        self._client_secret = config.servicenow_client_secret
-        self._scope = config.servicenow_oauth_scope
+        self._client_secret = config.servicenow_client_secret.strip()
+        self._oauth_scope = config.servicenow_oauth_scope
         self._verify_ssl = config.servicenow_verify_ssl
         self._page_size = config.servicenow_page_size
         self._languages = config.languages_list
         self._session = requests.Session()
+        self._session.proxies.update(config.proxies)
 
-    def _get_access_token(self) -> str:
-        token_url = f"{self._base_url}/oauth_token.do"
-        data = {
-            "grant_type": "client_credentials",
-            "client_id": self._client_id,
-            "client_secret": self._client_secret,
-            "scope": self._scope,
-        }
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        logger.debug("Requesting ServiceNow access token")
-        resp = self._session.post(token_url, data=data, headers=headers, verify=self._verify_ssl)
-        resp.raise_for_status()
-        token = resp.json().get("access_token")
-        if not token:
-            raise RuntimeError("ServiceNow OAuth response did not contain an access_token")
-        return token
+    @staticmethod
+    def _field(fields: dict, name: str, display: bool = False):
+        field = fields.get(name, {})
+        if not isinstance(field, dict):
+            return field
+        key = "display_value" if display else "value"
+        return field.get(key) or field.get("value")
 
     @staticmethod
     def _parse_timestamp(value: str | None) -> str | None:
         if not value:
             return None
-        # ServiceNow typically returns "YYYY-MM-DD HH:MM:SS"
         try:
-            dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
-            return dt.isoformat()
+            return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").isoformat()
         except ValueError:
-            return value  # fallback to raw value if parsing fails
+            return value
 
-    def _fetch_articles(self) -> list[Document]:
-        token = self._get_access_token()
+    @classmethod
+    def _article_scope(cls, fields: dict) -> str:
+        description = str(cls._field(fields, "meta_description") or "").lower()
+        is_admin = "fachadministrator" in description
+        is_user = "nutzer" in description
+        if is_admin == is_user:
+            return "general"
+        return "admin" if is_admin else "user"
+
+    def _get_access_token(self) -> str:
+        logger.info("Authenticating with ServiceNow")
+        response = self._session.post(
+            self._token_url,
+            data={
+                "grant_type": "client_credentials",
+                "client_id": self._client_id,
+                "client_secret": self._client_secret,
+                "scope": self._oauth_scope,
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            verify=self._verify_ssl,
+        )
+        response.raise_for_status()
+        token = response.json().get("access_token")
+        if not token:
+            raise RuntimeError("ServiceNow OAuth response did not contain an access_token")
+        logger.info("ServiceNow authentication succeeded")
+        return token
+
+    def _article_detail(self, article_id: str) -> dict:
+        sys_id = article_id.split(":", 1)[-1]
+        response = self._session.get(
+            f"{self._articles_url.split('?', 1)[0].rstrip('/')}/{sys_id}",
+            verify=self._verify_ssl,
+        )
+        response.raise_for_status()
+        return response.json().get("result", {})
+
+    def load_documents(self) -> list[Document]:
+        """Return the complete published snapshot for the configured knowledge base."""
+        logger.info("Starting ServiceNow knowledge article load")
         self._session.headers.update(
             {
-                "Authorization": f"Bearer {token}",
+                "Authorization": f"Bearer {self._get_access_token()}",
                 "Accept": "application/json",
             }
         )
 
-        api_url = f"{self._base_url}/api/sn_km_api/knowledge/articles"
+        documents: list[Document] = []
         offset = 0
-        html_docs: list[Document] = []
-
-        logger.info("Fetching ServiceNow KB articles")
         while True:
-            logger.debug(f"Loading page {offset} with size {self._page_size}")
+            logger.info("Fetching ServiceNow article page at offset %s", offset)
             params = {
                 "filter": "workflow_state=published",
-                "language": ",".join(self._languages),
-                "fields": "text,workflow_state,language,kb_knowledge_base,sys_updated_on,sys_created_on,valid_to",
-                "limit": str(self._page_size),
-                "offset": str(offset),
+                "fields": ARTICLE_FIELDS,
+                "limit": self._page_size,
+                "offset": offset,
             }
-            resp = self._session.get(api_url, params=params, verify=self._verify_ssl)
-            resp.raise_for_status()
-            result = resp.json().get("result", [])
-            articles = result.get("articles", [])
+            if self._languages:
+                params["language"] = ",".join(self._languages)
 
+            response = self._session.get(self._articles_url, params=params, verify=self._verify_ssl)
+            response.raise_for_status()
+            articles = response.json().get("result", {}).get("articles", [])
             if not articles:
+                logger.info("No more ServiceNow articles found at offset %s", offset)
                 break
 
+            logger.info("Fetched %s ServiceNow article summaries", len(articles))
+
             for article in articles:
-                sys_id = article.get("id")
-                number = article.get("number")
-                title = article.get("title")
-                table_fields = article.get("fields")
-                html_body = table_fields.get("text").get("value")
-                lang = table_fields.get("language").get("value")
-                kb = table_fields.get("kb_knowledge_base").get("display_value")
-                created_raw = table_fields.get("sys_created_on").get("value")
-                created_iso = self._parse_timestamp(created_raw)
-                updated_raw = table_fields.get("sys_updated_on").get("value")
-                updated_iso = self._parse_timestamp(updated_raw)
+                fields = article.get("fields") or {}
+                detail = self._article_detail(article["id"])
+                sys_id = detail.get("sys_id") or article["id"].split(":", 1)[-1]
+                number = detail.get("number") or article.get("number")
+                title = detail.get("short_description") or article.get("title")
+                content = detail.get("content") or ""
 
-                # Construct a deep link to the article
-                source_url = f"https://go.muenchen.de/sp/{number}"
+                source = article.get("link")
+                if not source:
+                    parts = urlsplit(self._articles_url)
+                    source = f"{parts.scheme}://{parts.netloc}/kb?id=kb_article_view&sysparm_article={number}"
 
-                metadata = {
-                    "title": title,
-                    "number": number,
-                    "sys_id": sys_id,
-                    "lang": lang,
-                    "knowledgebase": kb,
-                    "created_at": created_iso,
-                    "updated_at": updated_iso,
-                    "source": source_url,
-                }
+                documents.append(
+                    Document(
+                        id=sys_id,
+                        page_content=markdownify(content, heading_style="ATX"),
+                        metadata={
+                            "title": title,
+                            "number": number,
+                            "sys_id": sys_id,
+                            "language": detail.get("language"),
+                            "knowledge_base": self._field(fields, "kb_knowledge_base", display=True),
+                            "category": self._field(fields, "kb_category", display=True),
+                            "created_at": self._parse_timestamp(self._field(fields, "sys_created_on")),
+                            "updated_at": self._parse_timestamp(self._field(fields, "sys_updated_on")),
+                            "valid_to": self._field(fields, "valid_to"),
+                            "scope": self._article_scope(fields),
+                            "attachments": detail.get("display_attachments") or [],
+                            "source": source,
+                        },
+                    )
+                )
 
-                html_docs.append(Document(id=sys_id, page_content=html_body, metadata=metadata))
+            offset += len(articles)
+            logger.info("Loaded %s ServiceNow articles so far", len(documents))
 
-            offset += self._page_size
+        logger.info("Loaded %s ServiceNow KB articles", len(documents))
+        return documents
 
-        return html_docs
-
-    def load_documents(self) -> list[Document]:
-        """Return the complete ServiceNow snapshot as canonical documents."""
-        html_docs = self._fetch_articles()
-        if not html_docs:
-            logger.info("No ServiceNow KB articles found for the given configuration")
-            return []
-
-        # Convert HTML to Markdown
-        markdown_docs = [
-            Document(
-                id=document.id,
-                page_content=markdownify(document.page_content, heading_style="ATX"),
-                metadata=document.metadata,
-            )
-            for document in html_docs
-        ]
-
-        logger.info(f"Loaded {len(html_docs)} ServiceNow KB articles as {len(markdown_docs)} documents")
-        return markdown_docs
-
-    def lazy_load(self) -> list[Document]:
-        """Compatibility alias for callers using the LangChain loader convention."""
-        return self.load_documents()
+    def lazy_load(self):
+        """Yield documents using the LangChain loader convention."""
+        yield from self.load_documents()

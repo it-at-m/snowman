@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlsplit, urlunsplit
 
 from pydantic import AliasChoices, Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -79,6 +80,12 @@ class SnowSettings(BaseSettings):
     servicenow_verify_ssl: bool = True
     servicenow_page_size: int = Field(default=100, ge=1)
     servicenow_languages: str = "de,en"
+    http_proxy: str | None = Field(default=None, validation_alias=AliasChoices("HTTP_PROXY", "VDB_HTTP_PROXY"))
+    https_proxy: str | None = Field(default=None, validation_alias=AliasChoices("HTTPS_PROXY", "VDB_HTTPS_PROXY"))
+
+    @property
+    def proxies(self) -> dict[str, str]:
+        return {protocol: proxy for protocol, proxy in (("http", self.http_proxy), ("https", self.https_proxy)) if proxy}
 
     @property
     def languages_list(self) -> list[str]:
@@ -86,4 +93,9 @@ class SnowSettings(BaseSettings):
 
     @property
     def token_url(self) -> str:
-        return self.servicenow_token_url or f"https://{self.servicenow_url.split('/')[2]}/oauth_token.do" if self.servicenow_url else ""
+        if self.servicenow_token_url:
+            return self.servicenow_token_url
+        if not self.servicenow_url:
+            return ""
+        parts = urlsplit(self.servicenow_url)
+        return urlunsplit((parts.scheme, parts.netloc, "/oauth_token.do", "", ""))
