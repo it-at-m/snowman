@@ -9,7 +9,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pre-commit==4.6.0"]
+dev = ["pre-commit==4.6.2"]
 beta-typing = ["ty==0.0.59"]
 lint = ["ruff==0.15.21"]
 
