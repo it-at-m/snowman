@@ -12,7 +12,8 @@ logger = getLogger()
 def main() -> None:
     settings = IndexerSettings()
     source = SnowLoader(SnowSettings())
-    result = IndexingPipeline(settings).run(source)
+    indexer = IndexingPipeline(settings)
+    result = indexer.run(source)
     logger.info(
         "Indexer finished",
         extra={
