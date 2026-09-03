@@ -44,7 +44,7 @@ jobs:
           cp -a mcp build-context/mcp
 
       - name: Upload Docker artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mcp
           path: build-context
