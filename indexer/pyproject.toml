@@ -29,7 +29,7 @@ dependencies = [
 snow-search-indexer = "src.main:main"
 
 [dependency-groups]
-beta-typing = ["ty==0.0.59"]
+beta-typing = ["ty==0.0.78"]
 lint = ["ruff==0.15.21"]
 
 [tool.uv]
