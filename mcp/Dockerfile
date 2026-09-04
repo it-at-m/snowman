@@ -15,7 +15,7 @@ ENV UV_HTTP_TIMEOUT=$UV_HTTP_TIMEOUT \
     UV_COMPILE_BYTECODE=0 \
     UV_LINK_MODE=copy
 
-COPY --from=ghcr.io/astral-sh/uv:latest@sha256:440fd6477af86a2f1b38080c539f1672cd22acb1b1a47e321dba5158ab08864d /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:latest@sha256:2bb3ebca0a796a155094a27773d290c4b074572e6107f171d88d086682fd2500 /uv /uvx /bin/
 
 USER root
 
