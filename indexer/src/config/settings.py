@@ -1,14 +1,53 @@
+import os
 from pathlib import Path
-from typing import Literal
+from typing import ClassVar, Literal
+from urllib.parse import urlsplit, urlunsplit
 
 from pydantic import AliasChoices, Field, ValidationInfo, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict, YamlConfigSettingsSource
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
-class IndexerSettings(BaseSettings):
+class YamlSettings(BaseSettings):
+    """Settings with an optional, sectioned YAML source."""
+
+    yaml_section: ClassVar[str]
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        configured_file = os.getenv("SNOWMAN_CONFIG_FILE")
+        yaml_file = Path(configured_file) if configured_file else PROJECT_ROOT / "config.yaml"
+        sources = (
+            init_settings,
+            env_settings,
+            dotenv_settings,
+            file_secret_settings,
+        )
+        if not yaml_file.is_file():
+            if configured_file:
+                raise FileNotFoundError(f"SNOWMAN_CONFIG_FILE does not exist: {yaml_file}")
+            return sources
+        return sources + (
+            YamlConfigSettingsSource(
+                settings_cls,
+                yaml_file=yaml_file,
+                yaml_config_section=cls.yaml_section,
+            ),
+        )
+
+
+class IndexerSettings(YamlSettings):
     """Source-independent settings for the indexing pipeline."""
+
+    yaml_section = "indexer"
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
@@ -60,8 +99,10 @@ class IndexerSettings(BaseSettings):
         return value
 
 
-class SnowSettings(BaseSettings):
+class SnowSettings(YamlSettings):
     """Configuration owned by the example ServiceNow source adapter."""
+
+    yaml_section = "servicenow"
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
@@ -79,6 +120,12 @@ class SnowSettings(BaseSettings):
     servicenow_verify_ssl: bool = True
     servicenow_page_size: int = Field(default=100, ge=1)
     servicenow_languages: str = "de,en"
+    http_proxy: str | None = Field(default=None, validation_alias=AliasChoices("HTTP_PROXY", "VDB_HTTP_PROXY"))
+    https_proxy: str | None = Field(default=None, validation_alias=AliasChoices("HTTPS_PROXY", "VDB_HTTPS_PROXY"))
+
+    @property
+    def proxies(self) -> dict[str, str]:
+        return {protocol: proxy for protocol, proxy in (("http", self.http_proxy), ("https", self.https_proxy)) if proxy}
 
     @property
     def languages_list(self) -> list[str]:
@@ -86,4 +133,9 @@ class SnowSettings(BaseSettings):
 
     @property
     def token_url(self) -> str:
-        return self.servicenow_token_url or f"https://{self.servicenow_url.split('/')[2]}/oauth_token.do" if self.servicenow_url else ""
+        if self.servicenow_token_url:
+            return self.servicenow_token_url
+        if not self.servicenow_url:
+            return ""
+        parts = urlsplit(self.servicenow_url)
+        return urlunsplit((parts.scheme, parts.netloc, "/oauth_token.do", "", ""))

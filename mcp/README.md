@@ -1,8 +1,8 @@
 # snow-search MCP Server
 
-Python project for the snow-search MCP server.
-
-The server is intentionally minimal for now: it exposes the MCP protocol via Streamable HTTP and provides a basic health endpoint. Tools, resources, prompts, and domain logic will be added later.
+Python project for the snow-search MCP server. One server can expose multiple
+topic-specific search tools while sharing the same retriever, Qdrant client,
+embedding models, reranker, and collections.
 
 ## Environment
 
@@ -14,6 +14,16 @@ uv sync --project mcp
 
 Project-specific environment variables belong in `mcp/.env`. Use `mcp/.env.example` as the template.
 
+Non-secret settings can also be stored in `mcp/config.yaml`. Copy
+`config.example.yaml` to `config.yaml` to get started. The file has separate
+`mcp` and `retrieval` sections. Set `SNOWMAN_CONFIG_FILE` to use a different
+path, for example a ConfigMap mount in OpenShift.
+
+Constructor arguments, environment variables, and `.env` values override YAML.
+Keep credentials such as API keys in environment variables or mounted secrets;
+do not commit them to YAML. Configuration is read at startup, so restart the
+server after changing the file.
+
 Relevant MCP defaults:
 
 | Variable              | Default                    | Purpose                                                                 |
@@ -24,6 +34,61 @@ Relevant MCP defaults:
 | `MCP_PATH`            | `/mcp`                     | Streamable HTTP MCP endpoint.                                           |
 | `MCP_ALLOWED_HOSTS`   | local hosts for `MCP_PORT` | Comma-separated Host headers allowed by transport security.             |
 | `MCP_ALLOWED_ORIGINS` | empty                      | Comma-separated browser origins, only needed for browser-based clients. |
+
+## Retrieval Tools and Scoping
+
+Retrieval tools are created from configuration when the server starts. Each tool
+accepts only a self-contained `query`; callers cannot supply a metadata filter or
+retrieval profile. The tool selected by an assistant determines the
+server-controlled Qdrant filter.
+
+`VDB_FILTER_BASE_CONDITIONS` is a JSON array of conditions applied to every tool:
+
+```json
+[
+  {"field": "metadata.source_id", "values": ["snow-kb"]}
+]
+```
+
+`VDB_RETRIEVAL_TOOLS` is a JSON array of generated tool definitions:
+
+```json
+[
+  {
+    "name": "search_snow_knowledge_base",
+    "title": "Search SNOW knowledge base",
+    "description": "Search generally available SNOW articles.",
+    "conditions": []
+  },
+  {
+    "name": "search_eakte_knowledge_base",
+    "title": "Search E-Akte knowledge base",
+    "description": "Search E-Akte articles.",
+    "conditions": [
+      {"field": "metadata.topic", "values": ["eakte"]},
+      {
+        "field": "metadata.knowledgebase",
+        "values": ["general", "key_user"]
+      }
+    ]
+  }
+]
+```
+
+Base conditions and all conditions within a tool are combined with `AND`.
+Multiple values within one condition are combined with `OR`. Field paths and
+values use exact Qdrant payload matches, so they must already exist in indexed
+documents with the same spelling and casing.
+
+Select the individual generated MCP tool in each assistant's custom toolset. To
+add another topic, confirm its existing Qdrant metadata, add another tool entry,
+restart or roll out this same MCP deployment, and select the new tool for the
+assistant. No Python function or separate MCP deployment is needed.
+
+This filtering scopes retrieval for relevance; it is not authorization. Only
+advertise scopes whose matching documents are safe for every user who can attach
+or invoke the tool. Restricted content requires trusted caller identity and an
+independent authorization check.
 
 ## Run
 
@@ -75,4 +140,5 @@ The project keeps the standard utility modules in `src/utils/`:
 cd mcp
 uv run python -m unittest discover -s tests
 uv run ruff check .
+uv run ruff format --check .
 ```

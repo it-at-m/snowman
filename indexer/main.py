@@ -1,9 +1,8 @@
-from truststore import inject_into_ssl
-
 from src.config.settings import IndexerSettings, SnowSettings
 from src.indexer.pipeline import IndexingPipeline
 from src.loaders.snow_loader import SnowLoader
 from src.utils.logtools import getLogger
+from truststore import inject_into_ssl
 
 inject_into_ssl()
 logger = getLogger()
@@ -12,8 +11,7 @@ logger = getLogger()
 def main() -> None:
     settings = IndexerSettings()
     source = SnowLoader(SnowSettings())
-    indexer = IndexingPipeline(settings)
-    result = indexer.run(source)
+    result = IndexingPipeline(settings).run(source)
     logger.info(
         "Indexer finished",
         extra={

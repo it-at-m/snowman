@@ -1,0 +1,23 @@
+mcp:
+  transport: streamable-http
+  host: 0.0.0.0
+  port: 8080
+  path: /mcp
+  log_level: INFO
+
+retrieval:
+  qdrant_url: http://localhost:6333
+  collections: snow-search
+  retrieval_n_docs: 10
+  retrieval_final_n_docs: 5
+  retrieval_score_threshold: 0.5
+  retrieval_fusion: DBSF
+  filter_base_conditions:
+    - field: metadata.source_id
+      values:
+        - snow-kb
+  retrieval_tools:
+    - name: search_snow_knowledge_base
+      title: Search SNOW knowledge base
+      description: Search all generally available articles in the company SNOW knowledge base.
+      conditions: []
