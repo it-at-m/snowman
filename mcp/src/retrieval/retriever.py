@@ -4,7 +4,6 @@ from cohere import ClientV2
 from cohere.v2.types import V2RerankResponse
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
-from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_openai import OpenAIEmbeddings
 from langchain_qdrant import FastEmbedSparse, QdrantVectorStore, RetrievalMode
 from qdrant_client import QdrantClient
@@ -29,12 +28,8 @@ class Retriever:
         self._qdrant_client: QdrantClient | None = None
         self._embedding_model: Embeddings | None = None
         self._sparse_embedding_model: FastEmbedSparse | None = None
-        self._retrievers: dict[str, VectorStoreRetriever] = {}
+        self._vectorstores: dict[str, QdrantVectorStore] = {}
         self.rerank_client: ClientV2 | None = self._build_reranker() if self.config.rerank_enabled else None
-
-        for collection in self.config.collections_list:
-            logger.info(f"Initializing retriever for collection {collection}")
-            self._build_retriever(collection)
 
     @staticmethod
     def interleave_document_lists(doc_lists: list[list[Document]], n_final=5) -> list[Document]:
@@ -135,27 +130,12 @@ class Retriever:
             sparse_embedding=self._build_sparse_embedding_model(),
         )
 
-    def _build_retriever(self, collection: str | None = None, filter: Filter | None = None) -> VectorStoreRetriever:
-        """Create a threshold retriever for one collection."""
-        collection_name = collection or self.config.collections_list[0]
-
-        if collection_name not in self._retrievers:
-            fusion = Fusion.DBSF if self.config.retrieval_fusion == "DBSF" else Fusion.RRF
-
-            # LangChain can warn because Qdrant hybrid scores are not always in [0, 1].
-            # This warning is expected for hybrid search, so keep the suppression local.
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore", category=UserWarning, message=".*Relevance scores.*")
-                self._retrievers[collection_name] = self._build_vectorstore(collection_name).as_retriever(
-                    search_type="similarity_score_threshold",
-                    search_kwargs={
-                        "score_threshold": self.config.retrieval_score_threshold,
-                        "k": self.config.retrieval_n_docs,
-                        "hybrid_fusion": FusionQuery(fusion=fusion),
-                        "filter": filter,
-                    },
-                )
-        return self._retrievers[collection_name]
+    def _get_vectorstore(self, collection: str) -> QdrantVectorStore:
+        """Create each expensive vector store once and reuse it between requests."""
+        if collection not in self._vectorstores:
+            logger.info(f"Initializing vector store for collection {collection}")
+            self._vectorstores[collection] = self._build_vectorstore(collection)
+        return self._vectorstores[collection]
 
     def _build_reranker(self) -> ClientV2:
         """Create a Cohere reranker client for re-ranking retrieved documents.
@@ -201,7 +181,7 @@ class Retriever:
         # Shape the response back into the collection->docs mapping expected by callers.
         return self._build_documents_by_collection(final_docs)
 
-    def retrieve_documents(self, query: str, filter: Filter | None) -> dict[str, list[Document]]:
+    def retrieve_documents(self, query: str, filter: Filter | None = None) -> dict[str, list[Document]]:
         """Retrieve matching documents from all configured collections."""
         cleaned_query = query.strip()
         if not cleaned_query:
@@ -209,8 +189,22 @@ class Retriever:
 
         documents_by_collection: dict[str, list[Document]] = {}
         for collection in self.config.collections_list:
-            retriever = self._build_retriever(collection)
-            documents_by_collection[collection] = retriever.invoke(cleaned_query, filter=filter)
+            fusion = Fusion.DBSF if self.config.retrieval_fusion == "DBSF" else Fusion.RRF
+
+            # The wrapper is cheap and request-specific so its filter cannot leak to
+            # the next tool call. The underlying vector store remains cached.
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=UserWarning, message=".*Relevance scores.*")
+                retriever = self._get_vectorstore(collection).as_retriever(
+                    search_type="similarity_score_threshold",
+                    search_kwargs={
+                        "score_threshold": self.config.retrieval_score_threshold,
+                        "k": self.config.retrieval_n_docs,
+                        "hybrid_fusion": FusionQuery(fusion=fusion),
+                        "filter": filter,
+                    },
+                )
+            documents_by_collection[collection] = retriever.invoke(cleaned_query)
 
         if not self.config.rerank_enabled:
             document_list = Retriever.interleave_document_lists(

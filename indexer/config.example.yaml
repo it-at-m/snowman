@@ -1,0 +1,15 @@
+indexer:
+  qdrant_url: http://localhost:6333
+  collection_name: snow-search
+  indexing_mode: hybrid
+  document_chunk_size: 1000
+  document_chunk_overlap: 200
+  indexing_batch_size: 20
+  allow_empty_snapshot: false
+
+servicenow:
+  servicenow_url: https://example.service-now.com/api/sn_km_api/knowledge/articles?kb=knowledge-base-sys-id
+  servicenow_oauth_scope: knowledge
+  servicenow_verify_ssl: true
+  servicenow_page_size: 100
+  servicenow_languages: de,en

@@ -37,6 +37,15 @@ Existing collections are validated against the configured dense/hybrid mode and 
 
 Copy `.env.example` to `.env`, provide the Qdrant, embedding, and source credentials, then run:
 
+Non-secret settings can alternatively be stored in `indexer/config.yaml`. Copy
+`config.example.yaml` to `config.yaml` to get started. It contains separate
+`indexer` and `servicenow` sections. Set `SNOWMAN_CONFIG_FILE` to load a file
+from another path.
+
+Environment variables and `.env` values override YAML, so credentials should
+remain in environment variables or mounted secrets rather than committed YAML.
+The configuration is loaded once when the indexer starts.
+
 ```bash
 uv sync --project indexer
 uv run --directory indexer python -m src.main

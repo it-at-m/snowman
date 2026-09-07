@@ -28,36 +28,37 @@ class QdrantIndexer:
         config: IndexerSettings,
         *,
         client: QdrantClient | None = None,
-        dense_embedding: Embeddings | None = None,
-        sparse_embedding: SparseEmbeddings | None = None,
+        dense_embedding_model: Embeddings | None = None,
+        sparse_embedding_model: SparseEmbeddings | None = None,
     ) -> None:
         self.config = config
         self._client = client
-        self._dense_embedding = dense_embedding
-        self._sparse_embedding = sparse_embedding
+        self._dense_embedding_model = dense_embedding_model or self._create_dense_embedding_model()
+        self._sparse_embedding_model = (
+            sparse_embedding_model or self._create_sparse_embedding_model() if config.indexing_mode == "hybrid" else None
+        )
         self._vector_store: QdrantVectorStore | None = None
 
-    def _dense_embedding_model(self) -> Embeddings:
-        if self._dense_embedding is None:
-            kwargs = {
-                "model": self.config.openai_embedding_model,
-                "timeout": self.config.embedding_timeout,
-                "max_retries": self.config.embedding_max_retries,
-                "api_key": self.config.openai_api_key,
-            }
-            if self.config.openai_api_base:
-                kwargs["base_url"] = self.config.openai_api_base
-            self._dense_embedding = OpenAIEmbeddings(**kwargs)
-        return self._dense_embedding
+    def _create_dense_embedding_model(self) -> Embeddings:
+        print("create dense embedding model")
+        kwargs = {
+            "model": self.config.openai_embedding_model,
+            "timeout": self.config.embedding_timeout,
+            "max_retries": self.config.embedding_max_retries,
+            "api_key": self.config.openai_api_key,
+        }
+        if self.config.openai_api_base:
+            kwargs["base_url"] = self.config.openai_api_base
+        emb_model = OpenAIEmbeddings(**kwargs)
+        return emb_model
 
-    def _sparse_embedding_model(self) -> SparseEmbeddings:
-        if self._sparse_embedding is None:
-            self._sparse_embedding = FastEmbedSparse(
-                model_name=self.config.sparse_embedding_model,
-                language=self.config.sparse_embedding_language,
-                cache_dir=self.config.fastembed_cache_path,
-            )
-        return self._sparse_embedding
+    def _create_sparse_embedding_model(self) -> SparseEmbeddings:
+        emb_model = FastEmbedSparse(
+            model_name=self.config.sparse_embedding_model,
+            language=self.config.sparse_embedding_language,
+            cache_dir=self.config.fastembed_cache_path,
+        )
+        return emb_model
 
     def _qdrant_client(self) -> QdrantClient:
         if self._client is None:
@@ -75,7 +76,7 @@ class QdrantIndexer:
 
         client = self._qdrant_client()
         collection = self.config.collection_name
-        dense_embedding = self._dense_embedding_model()
+        dense_embedding = self._dense_embedding_model
         hybrid = self.config.indexing_mode == "hybrid"
 
         if not client.collection_exists(collection):
@@ -93,7 +94,7 @@ class QdrantIndexer:
             embedding=dense_embedding,
             retrieval_mode=RetrievalMode.HYBRID if hybrid else RetrievalMode.DENSE,
             vector_name=self.config.dense_vector_name,
-            sparse_embedding=self._sparse_embedding_model() if hybrid else None,
+            sparse_embedding=self._sparse_embedding_model if hybrid else None,
             sparse_vector_name=self.config.sparse_vector_name,
         )
         return self._vector_store

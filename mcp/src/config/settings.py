@@ -1,13 +1,102 @@
+import os
+import re
 from pathlib import Path
-from typing import Literal
+from typing import ClassVar, Literal
 
-from pydantic import AliasChoices, Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import AliasChoices, BaseModel, Field, field_validator, model_validator
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict, YamlConfigSettingsSource
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
-class McpSettings(BaseSettings):
+class YamlSettings(BaseSettings):
+    """Settings with an optional, sectioned YAML source."""
+
+    yaml_section: ClassVar[str]
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        configured_file = os.getenv("SNOWMAN_CONFIG_FILE")
+        yaml_file = Path(configured_file) if configured_file else PROJECT_ROOT / "config.yaml"
+        sources = (
+            init_settings,
+            env_settings,
+            dotenv_settings,
+            file_secret_settings,
+        )
+        if not yaml_file.is_file():
+            if configured_file:
+                raise FileNotFoundError(f"SNOWMAN_CONFIG_FILE does not exist: {yaml_file}")
+            return sources
+        return sources + (
+            YamlConfigSettingsSource(
+                settings_cls,
+                yaml_file=yaml_file,
+                yaml_config_section=cls.yaml_section,
+            ),
+        )
+
+
+class RetrievalFilterCondition(BaseModel):
+    """One exact-match condition applied to a Qdrant payload field."""
+
+    field: str
+    values: list[str]
+
+    @field_validator("field")
+    @classmethod
+    def require_field(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("filter field must not be empty")
+        return value
+
+    @field_validator("values")
+    @classmethod
+    def require_values(cls, values: list[str]) -> list[str]:
+        # dict keeps the configured order while removing duplicate exact matches.
+        normalized = list(dict.fromkeys(value.strip() for value in values if value.strip()))
+        if not normalized:
+            raise ValueError("filter condition requires at least one value")
+        return normalized
+
+
+class RetrievalToolSettings(BaseModel):
+    """Configuration used to register one scoped MCP search tool."""
+
+    name: str
+    title: str
+    description: str
+    conditions: list[RetrievalFilterCondition] = Field(default_factory=list)
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        value = value.strip()
+        if not re.fullmatch(r"[a-z][a-z0-9_]*", value):
+            raise ValueError(
+                "retrieval tool name must start with a lowercase letter and contain only lowercase letters, numbers, and underscores"
+            )
+        return value
+
+    @field_validator("title", "description")
+    @classmethod
+    def require_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("retrieval tool title and description must not be empty")
+        return value
+
+
+class McpSettings(YamlSettings):
+    yaml_section = "mcp"
     # BaseSettings turns this class into configuration loaded from multiple sources.
     # Each class attribute below is both a typed setting and its default value.
     # At runtime Pydantic overrides these defaults with matching environment
@@ -55,7 +144,8 @@ class McpSettings(BaseSettings):
         return _split_csv(self.allowed_origins or "")
 
 
-class RetrievalSettings(BaseSettings):
+class RetrievalSettings(YamlSettings):
+    yaml_section = "retrieval"
     # Retrieval settings use BaseSettings as well, but without an env_prefix because
     # the consumed variables come from several existing namespaces: QDRANT_*, VDB_*,
     # OPENAI_*, and EMB_*. Field aliases below document those external names.
@@ -96,8 +186,43 @@ class RetrievalSettings(BaseSettings):
     # final documents returned to the agent
     retrieval_final_n_docs: int = Field(default=5, validation_alias="VDB_RETRIEVAL_FINAL_N_DOCS")
 
+    filter_base_conditions: list[RetrievalFilterCondition] = Field(
+        default_factory=lambda: [RetrievalFilterCondition(field="metadata.source_id", values=["snow-kb"])],
+        validation_alias="VDB_FILTER_BASE_CONDITIONS",
+    )
+    retrieval_tools: list[RetrievalToolSettings] = Field(
+        default_factory=lambda: [
+            RetrievalToolSettings(
+                name="search_snow_knowledge_base",
+                title="Search SNOW knowledge base",
+                description=(
+                    "Search all generally available articles in the company SNOW "
+                    "knowledge base. Use for questions that are not restricted to a "
+                    "more specific configured domain."
+                ),
+            )
+        ],
+        validation_alias="VDB_RETRIEVAL_TOOLS",
+    )
+
     rerank_enabled: bool = Field(default=False, validation_alias="VDB_RERANK_ENABLED")
     rerank_model: str = Field(default="cohere-rerank-v4.0-fast", validation_alias="RERANK_MODEL")
+
+    @model_validator(mode="after")
+    def validate_retrieval_scope(self) -> "RetrievalSettings":
+        if not self.filter_base_conditions:
+            raise ValueError("at least one retrieval base condition is required")
+        if not self.retrieval_tools:
+            raise ValueError("at least one retrieval tool is required")
+
+        names = [tool.name for tool in self.retrieval_tools]
+        if len(names) != len(set(names)):
+            raise ValueError("retrieval tool names must be unique")
+
+        titles = [tool.title for tool in self.retrieval_tools]
+        if len(titles) != len(set(titles)):
+            raise ValueError("retrieval tool titles must be unique")
+        return self
 
     @property
     def collections_list(self) -> list[str]:
