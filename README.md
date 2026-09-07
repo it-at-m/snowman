@@ -106,10 +106,11 @@ helm template snow-search-dev infrastructure/charts/snow-search -f infrastructur
 helm template snow-search-test infrastructure/charts/snow-search -f infrastructure/values-snow-search-test.yaml
 ```
 
-Build the MCP image from the MCP project directory:
+Build the images from their project directories:
 
 ```bash
 docker build -t snow-search-mcp:latest mcp
+docker build -t snow-search-indexer:latest indexer
 ```
 
 [uv]: https://docs.astral.sh/uv/
