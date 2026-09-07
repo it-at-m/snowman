@@ -139,3 +139,9 @@ class SnowSettings(YamlSettings):
             return ""
         parts = urlsplit(self.servicenow_url)
         return urlunsplit((parts.scheme, parts.netloc, "/oauth_token.do", "", ""))
+        if self.servicenow_token_url:
+            return self.servicenow_token_url
+        if not self.servicenow_url:
+            return ""
+        parts = urlsplit(self.servicenow_url)
+        return urlunsplit((parts.scheme, parts.netloc, "/oauth_token.do", "", ""))
