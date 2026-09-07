@@ -126,12 +126,6 @@ class SnowSettings(YamlSettings):
     @property
     def proxies(self) -> dict[str, str]:
         return {protocol: proxy for protocol, proxy in (("http", self.http_proxy), ("https", self.https_proxy)) if proxy}
-    http_proxy: str | None = Field(default=None, validation_alias=AliasChoices("HTTP_PROXY", "VDB_HTTP_PROXY"))
-    https_proxy: str | None = Field(default=None, validation_alias=AliasChoices("HTTPS_PROXY", "VDB_HTTPS_PROXY"))
-
-    @property
-    def proxies(self) -> dict[str, str]:
-        return {protocol: proxy for protocol, proxy in (("http", self.http_proxy), ("https", self.https_proxy)) if proxy}
 
     @property
     def languages_list(self) -> list[str]:
