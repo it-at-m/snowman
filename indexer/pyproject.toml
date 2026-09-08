@@ -21,7 +21,7 @@ dependencies = [
     "pydantic-settings==2.15.0",
     "python-dotenv==1.2.2",
     "pyyaml==6.0.3",
-    "qdrant-client==1.18.0",
+    "qdrant-client==1.19.0",
     "requests==2.34.2",
     "truststore==0.10.4",
 ]
