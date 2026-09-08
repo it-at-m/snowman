@@ -4,7 +4,7 @@ env:
   # Whether to analyze Java code or not (only set to true if repo has Java source code)
   analyze-java: false
   # Build mode to use for analysis of Java code (e.g. none, autobuild, manual)
-  java-buildmode: autobuild
+  java-buildmode: none
   # Whether to analyze JavaScript/TypeScript/Vue code or not (only set to true if repo has Javascript/Typescript/Vue source code)
   analyze-javascript-typescript-vue: false
   # Whether to analyze Python code or not (only set to true if repo has Python source code)
