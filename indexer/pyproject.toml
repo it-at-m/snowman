@@ -31,7 +31,7 @@ snow-search-indexer = "src.main:main"
 
 [dependency-groups]
 beta-typing = ["ty==0.0.59"]
-lint = ["ruff==0.15.21"]
+lint = ["ruff==0.16.7"]
 
 [tool.uv]
 add-bounds = "exact"

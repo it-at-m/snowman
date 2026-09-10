@@ -11,7 +11,7 @@ dependencies = [
 [dependency-groups]
 dev = ["pre-commit==4.6.2"]
 beta-typing = ["ty==0.0.59"]
-lint = ["ruff==0.15.21"]
+lint = ["ruff==0.16.7"]
 
 [tool.uv]
 add-bounds = "exact"
