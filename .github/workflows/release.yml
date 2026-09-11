@@ -1,0 +1,100 @@
+# Workflow to release the Python application images
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      app-path:
+        type: choice
+        description: Application to release
+        required: true
+        options:
+          - mcp
+          - indexer
+      release-version:
+        description: "Version to release, without a leading v (for example: 1.2.3)"
+        required: true
+
+jobs:
+  release-image:
+    name: Release ${{ inputs.app-path }} image
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+
+    env:
+      IMAGE_NAME: snow-search-${{ inputs.app-path }}
+      RELEASE_VERSION: ${{ inputs.release-version }}
+      RELEASE_TAG: ${{ inputs.app-path }}-${{ inputs.release-version }}
+
+    steps:
+      - name: Checkout
+        uses: it-at-m/lhm_actions/action-templates/actions/action-checkout@54b32c7d11363cad45838c9a3d8a8560b93f0e8c # v1.5.4
+
+      - name: Validate release version
+        run: |
+          if [[ ! "${{ inputs.release-version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "release-version must be a semantic version like 1.2.3"
+            exit 1
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install dependencies
+        run: uv sync --project ${{ inputs.app-path }} --locked
+
+      - name: Ruff check
+        run: uv run --project ${{ inputs.app-path }} ruff check .
+
+      - name: Ruff format check
+        run: uv run --project ${{ inputs.app-path }} ruff format --check .
+
+      - name: Prepare Docker artifact
+        run: |
+          mkdir -p build-context
+          cp -a "${{ inputs.app-path }}" "build-context/${{ inputs.app-path }}"
+
+      - name: Upload Docker artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ${{ inputs.app-path }}
+          path: build-context
+
+      - name: Build and push image
+        uses: it-at-m/lhm_actions/action-templates/actions/action-build-image@54b32c7d11363cad45838c9a3d8a8560b93f0e8c # v1.5.4
+        with:
+          path: ${{ inputs.app-path }}
+          image-name: ${{ env.IMAGE_NAME }}
+          artifact-name: ${{ inputs.app-path }}
+          registry: ghcr.io
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          image-tags: |
+            type=semver,pattern={{version}},value=${{ inputs.release-version }}
+            type=raw,value=latest
+
+          image-labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ inputs.release-version }}
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${RELEASE_TAG}" \
+            --target "${GITHUB_SHA}" \
+            --title "${IMAGE_NAME} ${RELEASE_VERSION}" \
+            --notes "Image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/${IMAGE_NAME}:${RELEASE_VERSION}" \
+            --generate-notes

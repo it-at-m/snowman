@@ -7,7 +7,7 @@ on:
       - "main"
 
 jobs:
-  test:
+  check-mcp:
     name: Check MCP
     runs-on: ubuntu-latest
 
@@ -19,12 +19,12 @@ jobs:
         uses: it-at-m/lhm_actions/action-templates/actions/action-checkout@54b32c7d11363cad45838c9a3d8a8560b93f0e8c # v1.5.4
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version-file: ".python-version"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
@@ -44,7 +44,7 @@ jobs:
           cp -a mcp build-context/mcp
 
       - name: Upload Docker artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: mcp
           path: build-context
@@ -53,7 +53,7 @@ jobs:
     name: Build and push MCP image
     runs-on: ubuntu-latest
     needs:
-      - test
+      - check-mcp
 
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
@@ -68,6 +68,78 @@ jobs:
           path: mcp
           image-name: snow-search-mcp
           artifact-name: mcp
+          registry: ghcr.io
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          image-tags: |
+            type=sha,prefix=sha-,format=long
+
+          image-labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=sha-${{ github.sha }}
+
+  check-indexer:
+    name: Check indexer
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: it-at-m/lhm_actions/action-templates/actions/action-checkout@54b32c7d11363cad45838c9a3d8a8560b93f0e8c # v1.5.4
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install dependencies
+        run: uv sync --project indexer --locked
+
+      - name: Ruff check
+        run: uv run --project indexer ruff check .
+
+      - name: Ruff format check
+        run: uv run --project indexer ruff format --check .
+
+      - name: Prepare Docker artifact
+        run: |
+          mkdir -p build-context
+          cp -a indexer build-context/indexer
+
+      - name: Upload Docker artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: indexer
+          path: build-context
+
+  build-indexer-image:
+    name: Build and push indexer image
+    runs-on: ubuntu-latest
+    needs:
+      - check-indexer
+
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Build and push image
+        uses: it-at-m/lhm_actions/action-templates/actions/action-build-image@54b32c7d11363cad45838c9a3d8a8560b93f0e8c # v1.5.4
+        with:
+          path: indexer
+          image-name: snow-search-indexer
+          artifact-name: indexer
           registry: ghcr.io
           registry-username: ${{ github.actor }}
           registry-password: ${{ secrets.GITHUB_TOKEN }}
