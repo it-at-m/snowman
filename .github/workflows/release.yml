@@ -96,6 +96,6 @@ jobs:
           gh release create "${RELEASE_TAG}" \
             --target "${GITHUB_SHA}" \
             --title "${IMAGE_NAME} ${RELEASE_VERSION}" \
-            --notes "Version tag: docker pull ghcr.io/${GITHUB_REPOSITORY_OWNER}/${IMAGE_NAME}:${RELEASE_VERSION}
-                     SHA tag: docker pull ghcr.io/${GITHUB_REPOSITORY_OWNER}/${IMAGE_NAME}:sha-${GITHUB_SHA}" \
+            --notes "Version tag: docker pull ghcr.io/${GITHUB_REPOSITORY}/${IMAGE_NAME}:${RELEASE_VERSION}
+                     SHA tag: docker pull ghcr.io/${GITHUB_REPOSITORY}/${IMAGE_NAME}:sha-${GITHUB_SHA}" \
             --generate-notes
