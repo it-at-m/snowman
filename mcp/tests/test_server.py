@@ -27,6 +27,7 @@ class FakeRetriever:
                     metadata={
                         "number": "KB-low",
                         "source": "https://example.org/low",
+                        "isHandbook": True,
                         "relevance_score": 0.1236,
                         "internal": "not exposed",
                     },
@@ -154,6 +155,7 @@ class ServerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([0.988, 0.124], [item["relevance_score"] for item in serialized])
         self.assertNotIn("internal", serialized[1])
         self.assertEqual("https://example.org/low", serialized[1]["source"])
+        self.assertIs(True, serialized[1]["isHandbook"])
 
 
 if __name__ == "__main__":

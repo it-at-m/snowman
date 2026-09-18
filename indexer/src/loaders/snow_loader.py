@@ -148,6 +148,7 @@ class SnowLoader:
                         id=sys_id,
                         page_content=markdownify(content, heading_style="ATX"),
                         metadata={
+                            "source_id": "snow-kb",
                             "title": title,
                             "number": number,
                             "sys_id": sys_id,
@@ -158,6 +159,7 @@ class SnowLoader:
                             "updated_at": self._parse_timestamp(self._field(fields, "sys_updated_on")),
                             "valid_to": self._field(fields, "valid_to"),
                             "scope": self._article_scope(fields),
+                            "isHandbook": False,
                             "attachments": detail.get("display_attachments") or [],
                             "source": source,
                         },
