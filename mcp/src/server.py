@@ -11,7 +11,7 @@ from src.config.settings import McpSettings, RetrievalSettings, RetrievalToolSet
 from src.retrieval.filters import build_retrieval_filter
 from src.retrieval.retriever import Retriever
 
-_METADATA_FIELDS = ("number", "title", "source", "knowledgebase", "lang", "updated_at")
+_METADATA_FIELDS = ("number", "title", "source", "knowledgebase", "lang", "updated_at", "isHandbook")
 
 
 def _serialize_documents(

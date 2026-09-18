@@ -21,3 +21,10 @@ retrieval:
       title: Search SNOW knowledge base
       description: Search all generally available articles in the company SNOW knowledge base.
       conditions: []
+    - name: search_handbook
+      title: Search handbook
+      description: Search documents marked as handbook content.
+      conditions:
+        - field: metadata.isHandbook
+          values:
+            - true

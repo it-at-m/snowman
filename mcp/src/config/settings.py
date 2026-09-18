@@ -48,7 +48,7 @@ class RetrievalFilterCondition(BaseModel):
     """One exact-match condition applied to a Qdrant payload field."""
 
     field: str
-    values: list[str]
+    values: list[str | bool]
 
     @field_validator("field")
     @classmethod
@@ -60,9 +60,16 @@ class RetrievalFilterCondition(BaseModel):
 
     @field_validator("values")
     @classmethod
-    def require_values(cls, values: list[str]) -> list[str]:
+    def require_values(cls, values: list[str | bool]) -> list[str | bool]:
         # dict keeps the configured order while removing duplicate exact matches.
-        normalized = list(dict.fromkeys(value.strip() for value in values if value.strip()))
+        normalized = []
+        for value in values:
+            if isinstance(value, str):
+                value = value.strip()
+                if not value:
+                    continue
+            normalized.append(value)
+        normalized = list(dict.fromkeys(normalized))
         if not normalized:
             raise ValueError("filter condition requires at least one value")
         return normalized
@@ -200,7 +207,13 @@ class RetrievalSettings(YamlSettings):
                     "knowledge base. Use for questions that are not restricted to a "
                     "more specific configured domain."
                 ),
-            )
+            ),
+            RetrievalToolSettings(
+                name="search_handbook",
+                title="Search handbook",
+                description="Search documents marked as handbook content.",
+                conditions=[RetrievalFilterCondition(field="metadata.isHandbook", values=[True])],
+            ),
         ],
         validation_alias="VDB_RETRIEVAL_TOOLS",
     )
