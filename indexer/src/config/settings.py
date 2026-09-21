@@ -120,8 +120,17 @@ class SnowSettings(YamlSettings):
     servicenow_verify_ssl: bool = True
     servicenow_page_size: int = Field(default=100, ge=1)
     servicenow_languages: str = "de,en"
+    servicenow_source_id: str = Field(default="snow-kb", validation_alias=AliasChoices("SERVICENOW_SOURCE_ID", "SNOW_SOURCE_ID"))
     http_proxy: str | None = Field(default=None, validation_alias=AliasChoices("HTTP_PROXY", "VDB_HTTP_PROXY"))
     https_proxy: str | None = Field(default=None, validation_alias=AliasChoices("HTTPS_PROXY", "VDB_HTTPS_PROXY"))
+
+    @field_validator("servicenow_source_id")
+    @classmethod
+    def require_source_id(cls, value: str) -> str:
+        source_id = value.strip()
+        if not source_id:
+            raise ValueError("servicenow_source_id must not be empty")
+        return source_id
 
     @property
     def proxies(self) -> dict[str, str]:

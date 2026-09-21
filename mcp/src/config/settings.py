@@ -48,7 +48,7 @@ class RetrievalFilterCondition(BaseModel):
     """One exact-match condition applied to a Qdrant payload field."""
 
     field: str
-    values: list[str]
+    values: list[str | bool]
 
     @field_validator("field")
     @classmethod
@@ -60,9 +60,16 @@ class RetrievalFilterCondition(BaseModel):
 
     @field_validator("values")
     @classmethod
-    def require_values(cls, values: list[str]) -> list[str]:
+    def require_values(cls, values: list[str | bool]) -> list[str | bool]:
         # dict keeps the configured order while removing duplicate exact matches.
-        normalized = list(dict.fromkeys(value.strip() for value in values if value.strip()))
+        normalized = []
+        for value in values:
+            if isinstance(value, str):
+                value = value.strip()
+                if not value:
+                    continue
+            normalized.append(value)
+        normalized = list(dict.fromkeys(normalized))
         if not normalized:
             raise ValueError("filter condition requires at least one value")
         return normalized
@@ -187,7 +194,7 @@ class RetrievalSettings(YamlSettings):
     retrieval_final_n_docs: int = Field(default=5, validation_alias="VDB_RETRIEVAL_FINAL_N_DOCS")
 
     filter_base_conditions: list[RetrievalFilterCondition] = Field(
-        default_factory=lambda: [RetrievalFilterCondition(field="metadata.source_id", values=["snow-kb"])],
+        default_factory=list,
         validation_alias="VDB_FILTER_BASE_CONDITIONS",
     )
     retrieval_tools: list[RetrievalToolSettings] = Field(
@@ -200,7 +207,14 @@ class RetrievalSettings(YamlSettings):
                     "knowledge base. Use for questions that are not restricted to a "
                     "more specific configured domain."
                 ),
-            )
+                conditions=[RetrievalFilterCondition(field="metadata.source_id", values=["snow-kb"])],
+            ),
+            RetrievalToolSettings(
+                name="search_handbook",
+                title="Search handbook",
+                description="Search documents marked as handbook content.",
+                conditions=[RetrievalFilterCondition(field="metadata.source_id", values=["SNOW_EAKTE_HANDBUCH"])],
+            ),
         ],
         validation_alias="VDB_RETRIEVAL_TOOLS",
     )
@@ -210,8 +224,6 @@ class RetrievalSettings(YamlSettings):
 
     @model_validator(mode="after")
     def validate_retrieval_scope(self) -> "RetrievalSettings":
-        if not self.filter_base_conditions:
-            raise ValueError("at least one retrieval base condition is required")
         if not self.retrieval_tools:
             raise ValueError("at least one retrieval tool is required")
 

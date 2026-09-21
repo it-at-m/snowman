@@ -9,6 +9,7 @@ indexer:
 
 servicenow:
   servicenow_url: https://example.service-now.com/api/sn_km_api/knowledge/articles?kb=knowledge-base-sys-id
+  servicenow_source_id: snow-kb
   servicenow_oauth_scope: knowledge
   servicenow_verify_ssl: true
   servicenow_page_size: 100

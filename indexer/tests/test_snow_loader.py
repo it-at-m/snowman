@@ -29,6 +29,7 @@ class SnowLoaderTests(unittest.TestCase):
             servicenow_client_secret=" secret ",
             servicenow_page_size=2,
             servicenow_languages="de,en",
+            servicenow_source_id="custom-snow-kb",
             http_proxy="http://proxy.example.invalid:8080",
             https_proxy="http://proxy.example.invalid:8443",
         )
@@ -105,6 +106,7 @@ class SnowLoaderTests(unittest.TestCase):
         self.assertEqual(2, len(documents))
         self.assertEqual("first-id", documents[0].id)
         self.assertIn("# Heading", documents[0].page_content)
+        self.assertEqual("custom-snow-kb", documents[0].metadata["source_id"])
         self.assertEqual("user", documents[0].metadata["scope"])
         self.assertEqual("eAkte", documents[0].metadata["knowledge_base"])
         self.assertEqual("2026-08-02T11:00:00", documents[0].metadata["updated_at"])
