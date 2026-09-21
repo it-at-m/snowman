@@ -96,8 +96,8 @@ retrieval:
         self.assertEqual("search_snow_knowledge_base", settings.retrieval_tools[0].name)
         self.assertEqual([], settings.retrieval_tools[0].conditions)
         self.assertEqual("search_handbook", settings.retrieval_tools[1].name)
-        self.assertEqual("metadata.isHandbook", settings.retrieval_tools[1].conditions[0].field)
-        self.assertEqual([True], settings.retrieval_tools[1].conditions[0].values)
+        self.assertEqual("metadata.source_id", settings.retrieval_tools[1].conditions[0].field)
+        self.assertEqual(["SNOW_EAKTE_HANDBUCH"], settings.retrieval_tools[1].conditions[0].values)
 
     def test_filter_conditions_accept_boolean_values(self) -> None:
         settings = RetrievalSettings(
@@ -150,10 +150,7 @@ retrieval:
         self.assertEqual("Search topic and audience.", settings.retrieval_tools[0].description)
         self.assertEqual([], settings.retrieval_tools[1].conditions)
 
-    def test_rejects_empty_base_conditions_and_tools(self) -> None:
-        with self.assertRaisesRegex(ValidationError, "base condition"):
-            RetrievalSettings(_env_file=None, filter_base_conditions=[])
-
+    def test_rejects_empty_tools(self) -> None:
         with self.assertRaisesRegex(ValidationError, "retrieval tool"):
             RetrievalSettings(_env_file=None, retrieval_tools=[])
 

@@ -40,6 +40,7 @@ class SnowLoader:
         self._verify_ssl = config.servicenow_verify_ssl
         self._page_size = config.servicenow_page_size
         self._languages = config.languages_list
+        self._source_id = config.servicenow_source_id
         self._session = requests.Session()
         self._session.proxies.update(config.proxies)
 
@@ -148,7 +149,7 @@ class SnowLoader:
                         id=sys_id,
                         page_content=markdownify(content, heading_style="ATX"),
                         metadata={
-                            "source_id": "snow-kb",
+                            "source_id": self._source_id,
                             "title": title,
                             "number": number,
                             "sys_id": sys_id,
@@ -159,7 +160,6 @@ class SnowLoader:
                             "updated_at": self._parse_timestamp(self._field(fields, "sys_updated_on")),
                             "valid_to": self._field(fields, "valid_to"),
                             "scope": self._article_scope(fields),
-                            "isHandbook": False,
                             "attachments": detail.get("display_attachments") or [],
                             "source": source,
                         },

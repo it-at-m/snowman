@@ -27,7 +27,6 @@ class FakeRetriever:
                     metadata={
                         "number": "KB-low",
                         "source": "https://example.org/low",
-                        "isHandbook": True,
                         "relevance_score": 0.1236,
                         "internal": "not exposed",
                     },
@@ -139,6 +138,35 @@ class ServerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual("eakte", calls[1][1].must[-1].match.value)
         self.assertEqual("personalwesen", calls[2][1].must[-1].match.value)
 
+    async def test_tools_can_filter_different_source_ids_without_base_scope(self) -> None:
+        retrieval_settings = RetrievalSettings(
+            _env_file=None,
+            filter_base_conditions=[],
+            retrieval_tools=[
+                {
+                    "name": "search_eakte",
+                    "title": "Search E-Akte",
+                    "description": "Search E-Akte articles.",
+                    "conditions": [{"field": "metadata.source_id", "values": ["SNOW_EAKTE"]}],
+                },
+                {
+                    "name": "search_handbook",
+                    "title": "Search handbook",
+                    "description": "Search handbook articles.",
+                    "conditions": [{"field": "metadata.source_id", "values": ["SNOW_EAKTE_HANDBUCH"]}],
+                },
+            ],
+        )
+
+        with patch("src.server.Retriever", FakeRetriever):
+            server = create_server(McpSettings(_env_file=None), retrieval_settings)
+            await server.call_tool("search_eakte", {"query": "access"})
+            await server.call_tool("search_handbook", {"query": "access"})
+
+        calls = FakeRetriever.instances[0].calls
+        self.assertEqual("SNOW_EAKTE", calls[0][1].must[0].match.value)
+        self.assertEqual("SNOW_EAKTE_HANDBUCH", calls[1][1].must[0].match.value)
+
     async def test_results_keep_projection_rounding_and_descending_sort(self) -> None:
         with patch("src.server.Retriever", FakeRetriever):
             server = create_server(
@@ -155,7 +183,6 @@ class ServerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([0.988, 0.124], [item["relevance_score"] for item in serialized])
         self.assertNotIn("internal", serialized[1])
         self.assertEqual("https://example.org/low", serialized[1]["source"])
-        self.assertIs(True, serialized[1]["isHandbook"])
 
 
 if __name__ == "__main__":

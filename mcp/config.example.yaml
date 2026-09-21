@@ -12,19 +12,19 @@ retrieval:
   retrieval_final_n_docs: 5
   retrieval_score_threshold: 0.5
   retrieval_fusion: DBSF
-  filter_base_conditions:
-    - field: metadata.source_id
-      values:
-        - snow-kb
+  filter_base_conditions: []
   retrieval_tools:
     - name: search_snow_knowledge_base
       title: Search SNOW knowledge base
       description: Search all generally available articles in the company SNOW knowledge base.
-      conditions: []
+      conditions:
+        - field: metadata.source_id
+          values:
+            - SNOW_EAKTE
     - name: search_handbook
-      title: Search handbook
+      title: Search Handbook
       description: Search documents marked as handbook content.
       conditions:
-        - field: metadata.isHandbook
+        - field: metadata.source_id
           values:
-            - true
+            - SNOW_EAKTE_HANDBUCH

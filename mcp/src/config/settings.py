@@ -194,7 +194,7 @@ class RetrievalSettings(YamlSettings):
     retrieval_final_n_docs: int = Field(default=5, validation_alias="VDB_RETRIEVAL_FINAL_N_DOCS")
 
     filter_base_conditions: list[RetrievalFilterCondition] = Field(
-        default_factory=lambda: [RetrievalFilterCondition(field="metadata.source_id", values=["snow-kb"])],
+        default_factory=list,
         validation_alias="VDB_FILTER_BASE_CONDITIONS",
     )
     retrieval_tools: list[RetrievalToolSettings] = Field(
@@ -207,12 +207,13 @@ class RetrievalSettings(YamlSettings):
                     "knowledge base. Use for questions that are not restricted to a "
                     "more specific configured domain."
                 ),
+                conditions=[RetrievalFilterCondition(field="metadata.source_id", values=["snow-kb"])],
             ),
             RetrievalToolSettings(
                 name="search_handbook",
                 title="Search handbook",
                 description="Search documents marked as handbook content.",
-                conditions=[RetrievalFilterCondition(field="metadata.isHandbook", values=[True])],
+                conditions=[RetrievalFilterCondition(field="metadata.source_id", values=["SNOW_EAKTE_HANDBUCH"])],
             ),
         ],
         validation_alias="VDB_RETRIEVAL_TOOLS",
@@ -223,8 +224,6 @@ class RetrievalSettings(YamlSettings):
 
     @model_validator(mode="after")
     def validate_retrieval_scope(self) -> "RetrievalSettings":
-        if not self.filter_base_conditions:
-            raise ValueError("at least one retrieval base condition is required")
         if not self.retrieval_tools:
             raise ValueError("at least one retrieval tool is required")
 

@@ -48,6 +48,20 @@ class RetrievalFilterTests(unittest.TestCase):
             [condition.key for condition in qdrant_filter.must],
         )
 
+    def test_tool_can_scope_results_by_source_id_without_base_conditions(self) -> None:
+        tool = RetrievalToolSettings(
+            name="search_handbook",
+            title="Search handbook",
+            description="Search handbook articles.",
+            conditions=[RetrievalFilterCondition(field="metadata.source_id", values=["SNOW_EAKTE_HANDBUCH"])],
+        )
+
+        qdrant_filter = build_retrieval_filter([], tool)
+
+        self.assertEqual(1, len(qdrant_filter.must))
+        self.assertEqual("metadata.source_id", qdrant_filter.must[0].key)
+        self.assertEqual("SNOW_EAKTE_HANDBUCH", qdrant_filter.must[0].match.value)
+
     def test_boolean_condition_values_are_preserved(self) -> None:
         tool = RetrievalToolSettings(
             name="search_handbook",

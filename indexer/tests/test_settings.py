@@ -63,6 +63,18 @@ servicenow:
         )
         self.assertEqual(["de", "en"], settings.languages_list)
 
+    def test_snow_source_id_is_configurable_and_trimmed(self):
+        settings = SnowSettings(
+            _env_file=None,
+            SERVICENOW_SOURCE_ID=" custom-source ",
+        )
+
+        self.assertEqual("custom-source", settings.servicenow_source_id)
+
+    def test_rejects_empty_snow_source_id(self):
+        with self.assertRaises(ValidationError):
+            SnowSettings(_env_file=None, servicenow_source_id=" ")
+
     def test_snow_proxies_include_only_configured_protocols(self):
         settings = SnowSettings(
             _env_file=None,
