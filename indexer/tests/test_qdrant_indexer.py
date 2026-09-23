@@ -60,7 +60,7 @@ class QdrantIndexerTests(unittest.TestCase):
         )
         embeddings = FakeEmbeddings()
         settings = IndexerSettings(_env_file=None, collection_name="docs", indexing_mode="dense")
-        indexer = QdrantIndexer(settings, client=client, dense_embedding=embeddings)
+        indexer = QdrantIndexer(settings, client=client, dense_embedding_model=embeddings)
         original_vector = client.retrieve("docs", [point_id], with_vectors=True)[0].vector
         document = Document(
             id=point_id,
@@ -109,7 +109,7 @@ class QdrantIndexerTests(unittest.TestCase):
         )
         embeddings = FakeEmbeddings()
         settings = IndexerSettings(_env_file=None, collection_name="docs", indexing_mode="dense")
-        indexer = QdrantIndexer(settings, client=client, dense_embedding=embeddings)
+        indexer = QdrantIndexer(settings, client=client, dense_embedding_model=embeddings)
         document = Document(
             id=point_id,
             page_content="changed",
@@ -153,7 +153,7 @@ class QdrantIndexerTests(unittest.TestCase):
         )
         embeddings = FakeEmbeddings()
         settings = IndexerSettings(_env_file=None, collection_name="docs", indexing_mode="dense")
-        indexer = QdrantIndexer(settings, client=client, dense_embedding=embeddings)
+        indexer = QdrantIndexer(settings, client=client, dense_embedding_model=embeddings)
         document = Document(
             id=point_id,
             page_content="new stored content",
@@ -198,7 +198,7 @@ class QdrantIndexerTests(unittest.TestCase):
         )
         embeddings = FakeEmbeddings()
         settings = IndexerSettings(_env_file=None, collection_name="docs", indexing_mode="dense")
-        indexer = QdrantIndexer(settings, client=client, dense_embedding=embeddings)
+        indexer = QdrantIndexer(settings, client=client, dense_embedding_model=embeddings)
         document = Document(
             id=point_id,
             page_content="same content",
@@ -224,7 +224,7 @@ class QdrantIndexerTests(unittest.TestCase):
             [PointStruct(id=1, vector={"dense": [1.0, 1.0]}, payload={"metadata": {}})],
         )
         settings = IndexerSettings(_env_file=None, collection_name="docs", indexing_mode="dense")
-        indexer = QdrantIndexer(settings, client=client, dense_embedding=FakeEmbeddings())
+        indexer = QdrantIndexer(settings, client=client, dense_embedding_model=FakeEmbeddings())
         document = Document(
             id="b8c8059b-ce28-5cff-95f1-fb58a679304f",
             page_content="current",
@@ -240,7 +240,7 @@ class QdrantIndexerTests(unittest.TestCase):
 
     def test_prune_missing_collection_is_a_noop(self):
         settings = IndexerSettings(_env_file=None, collection_name="missing", indexing_mode="dense")
-        indexer = QdrantIndexer(settings, client=QdrantClient(":memory:"), dense_embedding=FakeEmbeddings())
+        indexer = QdrantIndexer(settings, client=QdrantClient(":memory:"), dense_embedding_model=FakeEmbeddings())
         self.assertEqual(0, indexer.prune_stale("run"))
 
     def test_hybrid_mode_creates_named_dense_and_sparse_vectors(self):
@@ -249,8 +249,8 @@ class QdrantIndexerTests(unittest.TestCase):
         indexer = QdrantIndexer(
             settings,
             client=client,
-            dense_embedding=FakeEmbeddings(),
-            sparse_embedding=FakeSparseEmbeddings(),
+            dense_embedding_model=FakeEmbeddings(),
+            sparse_embedding_model=FakeSparseEmbeddings(),
         )
         document = Document(
             id="b8c8059b-ce28-5cff-95f1-fb58a679304f",

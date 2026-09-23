@@ -91,10 +91,10 @@ retrieval:
     def test_default_scope_and_general_tool(self) -> None:
         settings = RetrievalSettings(_env_file=None)
 
-        self.assertEqual("metadata.source_id", settings.filter_base_conditions[0].field)
-        self.assertEqual(["snow-kb"], settings.filter_base_conditions[0].values)
+        self.assertEqual([], settings.filter_base_conditions)
         self.assertEqual("search_snow_knowledge_base", settings.retrieval_tools[0].name)
-        self.assertEqual([], settings.retrieval_tools[0].conditions)
+        self.assertEqual("metadata.source_id", settings.retrieval_tools[0].conditions[0].field)
+        self.assertEqual(["snow-kb"], settings.retrieval_tools[0].conditions[0].values)
         self.assertEqual("search_handbook", settings.retrieval_tools[1].name)
         self.assertEqual("metadata.source_id", settings.retrieval_tools[1].conditions[0].field)
         self.assertEqual(["SNOW_EAKTE_HANDBUCH"], settings.retrieval_tools[1].conditions[0].values)

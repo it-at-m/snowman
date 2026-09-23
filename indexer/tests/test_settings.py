@@ -76,10 +76,11 @@ servicenow:
             SnowSettings(_env_file=None, servicenow_source_id=" ")
 
     def test_snow_proxies_include_only_configured_protocols(self):
-        settings = SnowSettings(
-            _env_file=None,
-            HTTP_PROXY="http://proxy.example.invalid:8080",
-        )
+        with patch.dict(os.environ, {}, clear=True):
+            settings = SnowSettings(
+                _env_file=None,
+                HTTP_PROXY="http://proxy.example.invalid:8080",
+            )
 
         self.assertEqual({"http": "http://proxy.example.invalid:8080"}, settings.proxies)
 

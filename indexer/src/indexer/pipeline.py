@@ -37,16 +37,16 @@ class IndexingPipeline:
     def __init__(self, config: IndexerSettings, indexer: QdrantIndexer | None = None) -> None:
         self.config = config
         self.indexer = indexer or QdrantIndexer(config)
-        self._splitter = RecursiveCharacterTextSplitter(
-            chunk_size=self.indexer._dense_embedding_model.embedding_ctx_length  # type: ignore
-            - self.indexer._dense_embedding_model.embedding_ctx_length * 0.1  # type: ignore
-            if self.indexer._dense_embedding_model.embedding_ctx_length  # type: ignore
-            else config.document_chunk_size,  # type: ignore
-            chunk_overlap=config.document_chunk_overlap
-            if config.document_chunk_overlap < self.indexer._dense_embedding_model.embedding_ctx_length  # type: ignore
-            else 0,  # type: ignore
+        embedding_context_length = getattr(
+            getattr(self.indexer, "_dense_embedding_model", None),
+            "embedding_ctx_length",
+            None,
         )
-        print(f"dense embedding model context length: {self.indexer._dense_embedding_model.embedding_ctx_length}")  # type: ignore
+        chunk_size = int(embedding_context_length * 0.9) if embedding_context_length else config.document_chunk_size
+        self._splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=config.document_chunk_overlap if config.document_chunk_overlap < chunk_size else 0,
+        )
         embedding_config = {
             "indexing_mode": config.indexing_mode,
             "openai_api_base": config.openai_api_base,

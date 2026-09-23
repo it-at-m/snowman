@@ -62,6 +62,18 @@ class SnowLoader:
             return value
 
     @classmethod
+    def _content_as_text(cls, content) -> str:
+        if content is None:
+            return ""
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            return "\n".join(cls._content_as_text(item) for item in content)
+        if isinstance(content, dict):
+            return str(content.get("value") or content.get("display_value") or "")
+        return str(content)
+
+    @classmethod
     def _article_scope(cls, fields: dict) -> str:
         description = str(cls._field(fields, "meta_description") or "").lower()
         is_admin = "fachadministrator" in description
@@ -137,7 +149,7 @@ class SnowLoader:
                 sys_id = detail.get("sys_id") or article["id"].split(":", 1)[-1]
                 number = detail.get("number") or article.get("number")
                 title = detail.get("short_description") or article.get("title")
-                content = detail.get("content") or ""
+                content = self._content_as_text(detail.get("content"))
 
                 source = article.get("link")
                 if not source:
