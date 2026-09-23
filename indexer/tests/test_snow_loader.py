@@ -140,6 +140,13 @@ class SnowLoaderTests(unittest.TestCase):
                 fields = {"meta_description": field(description)}
                 self.assertEqual(expected, SnowLoader._article_scope(fields))
 
+    def test_normalizes_structured_content(self):
+        self.assertEqual("", SnowLoader._content_as_text(None))
+        self.assertEqual("<p>Body</p>", SnowLoader._content_as_text("<p>Body</p>"))
+        self.assertEqual("<p>One</p>\n<p>Two</p>", SnowLoader._content_as_text(["<p>One</p>", "<p>Two</p>"]))
+        self.assertEqual("<p>Value</p>", SnowLoader._content_as_text({"value": "<p>Value</p>"}))
+        self.assertEqual("<p>Display</p>", SnowLoader._content_as_text({"display_value": "<p>Display</p>"}))
+
     @patch("src.loaders.snow_loader.requests.Session")
     def test_requires_access_token_in_oauth_response(self, session_class):
         session = session_class.return_value
