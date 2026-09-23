@@ -126,6 +126,33 @@ class SnowLoaderTests(unittest.TestCase):
         self.assertEqual([0, 2], [call.kwargs["params"]["offset"] for call in list_calls])
         self.assertIn("?kb=kb-id", list_calls[0].args[0])
 
+    @patch("src.loaders.snow_loader.requests.Session")
+    def test_skips_articles_without_content(self, session_class):
+        session = session_class.return_value
+        session.headers = {}
+        session.post.return_value = Response({"access_token": "token"})
+        session.get.side_effect = [
+            Response(
+                {
+                    "result": {
+                        "articles": [
+                            {"id": "kb_knowledge:empty-id", "number": "KB003", "title": "Empty", "fields": {}},
+                            {"id": "kb_knowledge:text-id", "number": "KB004", "title": "Text", "fields": {}},
+                        ]
+                    }
+                }
+            ),
+            Response({"result": {"sys_id": "empty-id", "number": "KB003", "content": [], "text": " ", "article_body": None}}),
+            Response({"result": {"sys_id": "text-id", "number": "KB004", "content": "", "text": "<p>Text body</p>"}}),
+            Response({"result": {"articles": []}}),
+        ]
+
+        documents = SnowLoader(self.settings()).load_documents()
+
+        self.assertEqual(1, len(documents))
+        self.assertEqual("text-id", documents[0].id)
+        self.assertIn("Text body", documents[0].page_content)
+
     def test_assigns_user_admin_and_general_scopes(self):
         cases = {
             "Dieser Artikel richtet sich an eAkte-Nutzer*innen.": "user",
@@ -146,6 +173,11 @@ class SnowLoaderTests(unittest.TestCase):
         self.assertEqual("<p>One</p>\n<p>Two</p>", SnowLoader._content_as_text(["<p>One</p>", "<p>Two</p>"]))
         self.assertEqual("<p>Value</p>", SnowLoader._content_as_text({"value": "<p>Value</p>"}))
         self.assertEqual("<p>Display</p>", SnowLoader._content_as_text({"display_value": "<p>Display</p>"}))
+
+    def test_uses_first_non_empty_article_content_field(self):
+        self.assertEqual("<p>Content</p>", SnowLoader._article_content({"content": "<p>Content</p>", "text": "<p>Text</p>"}))
+        self.assertEqual("<p>Text</p>", SnowLoader._article_content({"content": " ", "text": "<p>Text</p>"}))
+        self.assertEqual("<p>Body</p>", SnowLoader._article_content({"content": [], "article_body": "<p>Body</p>"}))
 
     @patch("src.loaders.snow_loader.requests.Session")
     def test_requires_access_token_in_oauth_response(self, session_class):
