@@ -74,6 +74,14 @@ class SnowLoader:
         return str(content)
 
     @classmethod
+    def _article_content(cls, detail: dict) -> str:
+        for field in ("content", "text", "article_body"):
+            content = cls._content_as_text(detail.get(field))
+            if content.strip():
+                return content
+        return ""
+
+    @classmethod
     def _article_scope(cls, fields: dict) -> str:
         description = str(cls._field(fields, "meta_description") or "").lower()
         is_admin = "fachadministrator" in description
@@ -149,7 +157,11 @@ class SnowLoader:
                 sys_id = detail.get("sys_id") or article["id"].split(":", 1)[-1]
                 number = detail.get("number") or article.get("number")
                 title = detail.get("short_description") or article.get("title")
-                content = self._content_as_text(detail.get("content"))
+                content = self._article_content(detail)
+                page_content = markdownify(content, heading_style="ATX")
+                if not page_content.strip():
+                    logger.warning("Skipping ServiceNow article %s because it has no content", sys_id)
+                    continue
 
                 source = article.get("link")
                 if not source:
@@ -159,7 +171,7 @@ class SnowLoader:
                 documents.append(
                     Document(
                         id=sys_id,
-                        page_content=markdownify(content, heading_style="ATX"),
+                        page_content=page_content,
                         metadata={
                             "source_id": self._source_id,
                             "title": title,
