@@ -48,7 +48,7 @@ class RetrievalFilterCondition(BaseModel):
     """One exact-match condition applied to a Qdrant payload field."""
 
     field: str
-    values: list[str | bool]
+    values: list[str]
 
     @field_validator("field")
     @classmethod
@@ -60,19 +60,15 @@ class RetrievalFilterCondition(BaseModel):
 
     @field_validator("values")
     @classmethod
-    def require_values(cls, values: list[str | bool]) -> list[str | bool]:
-        # dict keeps the configured order while removing duplicate exact matches.
-        normalized = []
+    def require_values(cls, values: list[str]) -> list[str]:
+        normalized = set()
         for value in values:
-            if isinstance(value, str):
-                value = value.strip()
-                if not value:
-                    continue
-            normalized.append(value)
-        normalized = list(dict.fromkeys(normalized))
+            if not value.strip():
+                continue
+            normalized.add(value.strip())
         if not normalized:
             raise ValueError("filter condition requires at least one value")
-        return normalized
+        return list(sorted(normalized))
 
 
 class RetrievalToolSettings(BaseModel):

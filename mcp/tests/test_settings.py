@@ -99,21 +99,6 @@ retrieval:
         self.assertEqual("metadata.source_id", settings.retrieval_tools[1].conditions[0].field)
         self.assertEqual(["SNOW_EAKTE_HANDBUCH"], settings.retrieval_tools[1].conditions[0].values)
 
-    def test_filter_conditions_accept_boolean_values(self) -> None:
-        settings = RetrievalSettings(
-            _env_file=None,
-            retrieval_tools=[
-                {
-                    "name": "search_handbook",
-                    "title": "Search handbook",
-                    "description": "Search documents marked as handbook content.",
-                    "conditions": [{"field": "metadata.isHandbook", "values": [True]}],
-                }
-            ],
-        )
-
-        self.assertEqual([True], settings.retrieval_tools[0].conditions[0].values)
-
     def test_reads_json_scope_configuration_from_environment(self) -> None:
         base_conditions = [{"field": "metadata.tenant", "values": [" munich ", "munich", "shared"]}]
         tools = [

@@ -14,3 +14,4 @@ servicenow:
   servicenow_verify_ssl: true
   servicenow_page_size: 100
   servicenow_languages: de,en
+  service_portal_url: https://services.corp.com/sp

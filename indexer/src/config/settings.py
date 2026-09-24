@@ -121,6 +121,7 @@ class SnowSettings(YamlSettings):
     servicenow_page_size: int = Field(default=100, ge=1)
     servicenow_languages: str = "de,en"
     servicenow_source_id: str = Field(default="snow-kb", validation_alias=AliasChoices("SERVICENOW_SOURCE_ID", "SNOW_SOURCE_ID"))
+    service_portal_url: str | None = Field(default=None, validation_alias=AliasChoices("SERVICENOW_PORTAL_URL", "SNOW_PORTAL_URL"))
     http_proxy: str | None = Field(default=None, validation_alias=AliasChoices("HTTP_PROXY", "VDB_HTTP_PROXY"))
     https_proxy: str | None = Field(default=None, validation_alias=AliasChoices("HTTPS_PROXY", "VDB_HTTPS_PROXY"))
 
