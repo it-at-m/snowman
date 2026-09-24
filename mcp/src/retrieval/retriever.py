@@ -206,9 +206,14 @@ class Retriever:
                 )
             documents_by_collection[collection] = retriever.invoke(cleaned_query)
 
-        if not self.config.rerank_enabled:
-            document_list = Retriever.interleave_document_lists(
-                list(documents_by_collection.values()), n_final=self.config.retrieval_final_n_docs
-            )
-            return self._build_documents_by_collection(document_list)
-        return self._rerank_documents(cleaned_query, documents_by_collection)
+        if self.config.rerank_enabled:
+            try:
+                return self._rerank_documents(cleaned_query, documents_by_collection)
+            except Exception:
+                logger.exception("Reranking failed. Returning interleaved results.")
+
+        document_list = Retriever.interleave_document_lists(
+            list(documents_by_collection.values()),
+            n_final=self.config.retrieval_final_n_docs,
+        )
+        return self._build_documents_by_collection(document_list)
