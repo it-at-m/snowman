@@ -63,12 +63,12 @@ class RetrievalFilterCondition(BaseModel):
     def require_values(cls, values: list[str]) -> list[str]:
         normalized = set()
         for value in values:
-            if not value:
+            if not value.strip():
                 continue
             normalized.add(value.strip())
         if not normalized:
             raise ValueError("filter condition requires at least one value")
-        return list(normalized)
+        return list(sorted(normalized))
 
 
 class RetrievalToolSettings(BaseModel):
