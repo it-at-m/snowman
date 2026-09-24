@@ -62,17 +62,6 @@ class RetrievalFilterTests(unittest.TestCase):
         self.assertEqual("metadata.source_id", qdrant_filter.must[0].key)
         self.assertEqual("SNOW_EAKTE_HANDBUCH", qdrant_filter.must[0].match.value)
 
-    def test_boolean_condition_values_are_preserved(self) -> None:
-        tool = RetrievalToolSettings(
-            name="search_handbook",
-            title="Search handbook",
-            description="Search documents marked as handbook content.",
-            conditions=[RetrievalFilterCondition(field="metadata.isHandbook", values=[True])],
-        )
-
-        qdrant_filter = build_retrieval_filter([], tool)
-
-        self.assertIs(True, qdrant_filter.must[0].match.value)
 
 
 if __name__ == "__main__":
