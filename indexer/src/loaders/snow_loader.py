@@ -41,6 +41,7 @@ class SnowLoader:
         self._page_size = config.servicenow_page_size
         self._languages = config.languages_list
         self._source_id = config.servicenow_source_id
+        self._protal_url = config.service_portal_url
         self._session = requests.Session()
         self._session.proxies.update(config.proxies)
 
@@ -163,10 +164,7 @@ class SnowLoader:
                     logger.warning("Skipping ServiceNow article %s because it has no content", sys_id)
                     continue
 
-                source = article.get("link")
-                if not source:
-                    parts = urlsplit(self._articles_url)
-                    source = f"{parts.scheme}://{parts.netloc}/kb?id=kb_article_view&sysparm_article={number}"
+                source = f"{self._protal_url}{article.get('link')}"
 
                 documents.append(
                     Document(
