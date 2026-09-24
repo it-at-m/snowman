@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime
-from urllib.parse import urlsplit
 
 import requests
 from langchain_core.documents import Document
