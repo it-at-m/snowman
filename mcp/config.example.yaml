@@ -16,8 +16,15 @@ retrieval:
     - field: metadata.source_id
       values:
         - snow-kb
+    - field: metadata.is_handbuch
+      values: 
+        - true
   retrieval_tools:
     - name: search_snow_knowledge_base
       title: Search SNOW knowledge base
       description: Search all generally available articles in the company SNOW knowledge base.
+      conditions: []
+    - name: search_eakte_kb_incl-hanbuch
+      title: search eakte kb incl hanbuch
+      description: Search all generally available articles in the company SNOW knowledge base and the pdf contents of the documentation
       conditions: []
