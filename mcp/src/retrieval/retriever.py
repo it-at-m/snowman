@@ -165,6 +165,10 @@ class Retriever:
             list(documents.values()),
             n_final=self.config.retrieval_n_docs * len(list(documents.keys())),
         )
+
+        # Nothing to rerank: treat this as a normal case (no results in DB) and return
+        if not docs:
+            return self._build_documents_by_collection(docs)
         rerank_response: V2RerankResponse = self.rerank_client.rerank(
             model=self.config.rerank_model,
             query=query,
@@ -206,9 +210,11 @@ class Retriever:
                 )
             documents_by_collection[collection] = retriever.invoke(cleaned_query)
 
-        if not self.config.rerank_enabled:
-            document_list = Retriever.interleave_document_lists(
-                list(documents_by_collection.values()), n_final=self.config.retrieval_final_n_docs
-            )
-            return self._build_documents_by_collection(document_list)
-        return self._rerank_documents(cleaned_query, documents_by_collection)
+        if self.config.rerank_enabled:
+            return self._rerank_documents(cleaned_query, documents_by_collection)
+
+        document_list = Retriever.interleave_document_lists(
+            list(documents_by_collection.values()),
+            n_final=self.config.retrieval_final_n_docs,
+        )
+        return self._build_documents_by_collection(document_list)
