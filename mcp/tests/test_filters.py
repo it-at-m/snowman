@@ -63,6 +63,5 @@ class RetrievalFilterTests(unittest.TestCase):
         self.assertEqual("SNOW_EAKTE_HANDBUCH", qdrant_filter.must[0].match.value)
 
 
-
 if __name__ == "__main__":
     unittest.main()
