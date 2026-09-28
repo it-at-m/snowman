@@ -176,7 +176,11 @@ class QdrantIndexer:
         if not client.collection_exists(collection):
             return 0
 
-        stale_filter = Filter(must_not=[FieldCondition(key="metadata._index.run_id", match=MatchValue(value=run_id))])
+        stale_filter = Filter(must_not=[
+            FieldCondition(key="metadata._index.run_id", match=MatchValue(value=run_id)), 
+            FieldCondition(key="metadata.knowledge_base", match=MatchValue(value="eAkte_handbuch"))
+            ]
+        )
         stale_count = client.count(collection_name=collection, count_filter=stale_filter, exact=True).count
         if stale_count:
             client.delete(collection_name=collection, points_selector=stale_filter, wait=True)
