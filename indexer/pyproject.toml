@@ -5,7 +5,7 @@ description = "Source-independent document indexing pipeline for Qdrant."
 readme = "README.md"
 requires-python = "==3.13.11"
 dependencies = [
-    "authlib==1.8.0",
+    "authlib==1.9.1",
     "fastembed==0.8.0",
     "gitpython==3.1.59",
     "httpx==0.28.1",
