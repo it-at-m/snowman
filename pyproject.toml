@@ -3,7 +3,7 @@ name = "SNOW-MCP-Search"
 version = "0.1.0"
 description = "Repository-level development tooling SNOW."
 readme = "README.md"
-requires-python = "==3.13.11"
+requires-python = "==3.15.2"
 dependencies = [
     "jupyter==1.1.1",
 ]
