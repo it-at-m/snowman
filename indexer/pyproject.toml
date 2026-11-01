@@ -3,7 +3,7 @@ name = "snow-search-indexer"
 version = "0.1.0"
 description = "Source-independent document indexing pipeline for Qdrant."
 readme = "README.md"
-requires-python = "==3.13.11"
+requires-python = "==3.15.2"
 dependencies = [
     "authlib==1.8.0",
     "fastembed==0.8.0",

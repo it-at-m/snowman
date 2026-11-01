@@ -3,7 +3,7 @@ name = "snow-search-mcp"
 version = "0.1.0"
 description = "MCP server for retrieval over Qdrant"
 readme = "README.md"
-requires-python = "==3.13.11"
+requires-python = "==3.15.2"
 dependencies = [
     "cohere==7.0.5",
     "fastembed==0.8.0",
