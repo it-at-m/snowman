@@ -9,9 +9,9 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pre-commit==4.6.2"]
-beta-typing = ["ty==0.0.59"]
-lint = ["ruff==0.15.21"]
+dev = ["pre-commit==4.7.0"]
+beta-typing = ["ty==0.0.99"]
+lint = ["ruff==0.17.4"]
 
 [tool.uv]
 add-bounds = "exact"
