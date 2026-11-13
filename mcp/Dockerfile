@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi10/ubi-minimal:latest@sha256:5a1acbfad56de537f978184e662a02ba8141d82a3ce0d2aca183bfad812b0ea7
+FROM registry.access.redhat.com/ubi10/ubi-minimal:latest@sha256:fb2f7f857cc60d88e3fad19da505083a682ca4569d7b55a61f64aaa43641f741
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ ENV UV_HTTP_TIMEOUT=$UV_HTTP_TIMEOUT \
     UV_COMPILE_BYTECODE=0 \
     UV_LINK_MODE=copy
 
-COPY --from=ghcr.io/astral-sh/uv:latest@sha256:440fd6477af86a2f1b38080c539f1672cd22acb1b1a47e321dba5158ab08864d /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:latest@sha256:5cc1805e2426484abca4ad46ea783bab281fdb225fd82d8ce6d66a81254bac85 /uv /uvx /bin/
 
 USER root
 
